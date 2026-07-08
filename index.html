@@ -2,707 +2,979 @@
 <html lang="ms">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Misi Detektif Amanah - Siri Komik Ali</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Misi Detektif Amanah - Detective Room Edition</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Plus+Jakarta+Sans:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Plus+Jakarta+Sans:wght@300;400;600;700;800&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, collection, onSnapshot, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = JSON.parse(__firebase_config);
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+        window.db = db;
+        window.auth = auth;
+        window.appId = appId;
+        window.collection = collection;
+        window.doc = doc;
+        window.setDoc = setDoc;
+        window.onSnapshot = onSnapshot;
+        window.getDocs = getDocs;
+
+        const initAuth = async () => {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (error) {
+                console.error("Ralat log masuk pangkalan data awan:", error);
+            }
+        };
+
+        initAuth();
+
+        onAuthStateChanged(auth, (user) => {
+            if (user && typeof window.dengarLeaderboardFirestore === 'function') {
+                window.dengarLeaderboardFirestore();
+            }
+        });
+    </script>
+
     <style>
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
             background-color: #05070c;
-            /* Suasana Pejabat Detektif Malap + Hujan */
-            background-image: 
-                linear-gradient(rgba(11, 15, 25, 0.88), rgba(5, 7, 12, 0.95)),
-                url('https://images.unsplash.com/photo-1554147090-e1221a04a025?q=80&w=1200&auto=format&fit=crop');
-            background-size: cover;
-            background-position: center;
-            background-attachment: fixed;
-            position: relative;
             overflow-x: hidden;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
         }
-
-        /* Kesan Animasi Hujan di Luar Tingkap menggunakan CSS Overlay */
-        body::before {
-            content: "";
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: url('https://raw.githubusercontent.com/agnv/rain-effect/master/rain.png');
-            opacity: 0.08;
-            pointer-events: none;
-            animation: hujan 0.3s linear infinite;
-            z-index: 1;
-        }
-        @keyframes hujan {
-            0% { background-position: 0% 0%; }
-            100% { background-position: 20% 100%; }
-        }
-
         .typewriter-font {
             font-family: 'Special Elite', monospace;
         }
+        .courier-font {
+            font-family: 'Courier Prime', monospace;
+        }
         
-        /* Glassmorphism dengan gaya Pejabat Detektif Malap (Lampu Meja Tanpa Silau) */
-        .glass-panel {
-            background: rgba(13, 18, 30, 0.92);
-            backdrop-filter: blur(12px);
-            border: 2px solid rgba(234, 179, 8, 0.15);
-            box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.8), 0 10px 30px rgba(0, 0, 0, 0.7);
+        @keyframes lampFlicker {
+            0%, 19.999%, 22%, 62.999%, 64%, 64.999%, 70%, 100% {
+                opacity: 0.99;
+                filter: drop-shadow(0 0 15px rgba(234, 179, 8, 0.3));
+            }
+            20%, 21.999%, 63%, 63.999%, 65%, 69.999% {
+                opacity: 0.4;
+                filter: drop-shadow(0 0 2px rgba(234, 179, 8, 0.05));
+            }
+        }
+        .detective-lamp {
+            animation: lampFlicker 6s infinite;
         }
 
-        /* Efek Lampu Meja Malap Mentol Kuning */
-        .lamp-glow {
-            box-shadow: 0 -20px 80px rgba(234, 179, 8, 0.15), 0 0 40px rgba(0,0,0,0.5);
-        }
-
-        .neon-glow-gold { border-color: rgba(234, 179, 8, 0.4); box-shadow: 0 0 20px rgba(234, 179, 8, 0.15); }
-        .neon-glow-red { border-color: rgba(239, 68, 68, 0.4); box-shadow: 0 0 20px rgba(239, 68, 68, 0.15); }
-
-        /* Animasi Fail Dibuka */
-        .anim-fail-buka { animation: folderOpen 0.5s ease-out forwards; }
-        @keyframes folderOpen {
-            0% { transform: scale(0.9) rotateX(30deg); opacity: 0; }
-            100% { transform: scale(1) rotateX(0deg); opacity: 1; }
-        }
-
-        /* Animasi Kamera Zoom */
-        .anim-zoom { animation: cameraZoom 0.4s ease-in-out; }
-        @keyframes cameraZoom {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.03); }
-            100% { transform: scale(1); }
-        }
-
-        /* Animasi Lampu Suluh Bergerak */
-        .flashlight-beam {
-            position: absolute;
-            width: 150px; height: 150px;
-            background: radial-gradient(circle, rgba(253,224,71,0.15) 0%, rgba(0,0,0,0) 70%);
+        .rain-container {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
             pointer-events: none;
-            mix-blend-mode: screen;
-            z-index: 10;
+            z-index: 1;
+            opacity: 0.15;
+            background: transparent;
+        }
+        .rain-drop {
+            position: absolute;
+            background: linear-gradient(transparent, #ffffff);
+            width: 1px;
+            height: 50px;
+            opacity: 0.7;
+            animation: fall linear infinite;
+        }
+        @keyframes fall {
+            0% { transform: translateY(-100px); }
+            100% { transform: translateY(100vh); }
         }
 
-        /* Gaya Papan Siasatan Benang Merah */
-        .papan-bukti {
-            background-color: #2b1d11;
-            background-image: radial-gradient(rgba(0,0,0,0.3) 1px, transparent 0);
-            background-size: 8px 8px;
-            border: 6px solid #1e120a;
+        .case-file-zoom {
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s ease;
+        }
+        .case-file-zoom:hover {
+            transform: scale(1.01) translateY(-2px);
         }
 
-        /* Tali Benang Merah Penyambung Bukti */
-        .benang-merah {
+        .evidence-board {
+            background: radial-gradient(circle at 50% 50%, #2b1e17 0%, #17100c 100%);
+            border: 12px solid #0f0a08;
+            box-shadow: inset 0 0 30px rgba(0,0,0,0.8), 0 10px 25px rgba(0,0,0,0.7);
+        }
+        .vintage-paper {
+            background-color: #f4edd2;
+            color: #1c1917;
+            box-shadow: 3px 3px 15px rgba(0,0,0,0.5);
+            background-image: radial-gradient(rgba(0,0,0,0.03) 1px, transparent 0);
+            background-size: 24px 24px;
+        }
+        .red-string {
             position: relative;
         }
-        .benang-merah::after {
+        .red-string::after {
             content: '';
             position: absolute;
-            top: 50%; left: -15px;
-            width: 15px; height: 2px;
+            top: 50%; left: -20px; right: -20px;
+            height: 2px;
             background-color: #ef4444;
-            box-shadow: 0 0 4px #f87171;
-            z-index: 5;
+            opacity: 0.6;
+            z-index: 0;
+            pointer-events: none;
+        }
+        
+        .star-rating i {
+            transition: transform 0.1s ease, color 0.1s ease;
+        }
+        .star-rating i:hover {
+            transform: scale(1.2);
         }
     </style>
 </head>
-<body class="min-h-screen text-slate-100 flex flex-col justify-between p-2 md:p-4 relative" onmousemove="gerakLampuSuluh(event)">
+<body class="min-h-screen text-slate-200 flex flex-col justify-between p-2 md:p-4" ontouchstart="">
 
-    <div id="flashlight" class="flashlight-beam hidden"></div>
-
+    <div class="rain-container" id="rain-box"></div>
+    
     <script>
         const AudioFX = {
             ctx: null,
-            init() { if(!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)(); },
-            play(type) {
-                this.init();
-                const ctx = this.ctx;
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
-                osc.connect(gain);
-                gain.connect(ctx.destination);
-
-                if (type === 'tick') {
-                    osc.type = 'triangle'; osc.frequency.setValueAtTime(800, ctx.currentTime);
-                    gain.gain.setValueAtTime(0.1, ctx.currentTime);
-                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
-                    osc.start(); osc.stop(ctx.currentTime + 0.05);
-                } else if (type === 'wrong') {
-                    osc.type = 'sawtooth'; osc.frequency.setValueAtTime(150, ctx.currentTime);
-                    osc.frequency.linearRampToValueAtTime(100, ctx.currentTime + 0.3);
-                    gain.gain.setValueAtTime(0.2, ctx.currentTime);
-                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
-                    osc.start(); osc.stop(ctx.currentTime + 0.3);
-                } else if (type === 'misteri') {
-                    osc.type = 'sine'; osc.frequency.setValueAtTime(440, ctx.currentTime);
-                    osc.frequency.linearRampToValueAtTime(880, ctx.currentTime + 0.4);
-                    gain.gain.setValueAtTime(0.15, ctx.currentTime);
-                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
-                    osc.start(); osc.stop(ctx.currentTime + 0.4);
-                } else if (type === 'menang') {
-                    const nota = [523.25, 659.25, 783.99, 1046.50];
-                    nota.forEach((freq, idx) => {
-                        const o = ctx.createOscillator(); const g = ctx.createGain();
-                        o.connect(g); g.connect(ctx.destination);
-                        o.frequency.setValueAtTime(freq, ctx.currentTime + (idx * 0.1));
-                        g.gain.setValueAtTime(0.1, ctx.currentTime + (idx * 0.1));
-                        g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + (idx * 0.1) + 0.3);
-                        o.start(ctx.currentTime + (idx * 0.1)); o.stop(ctx.currentTime + (idx * 0.1) + 0.3);
-                    });
-                } else if (type === 'taip') {
-                    osc.type = 'square'; osc.frequency.setValueAtTime(Math.random() * 200 + 100, ctx.currentTime);
-                    gain.gain.setValueAtTime(0.03, ctx.currentTime);
-                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.03);
-                    osc.start(); osc.stop(ctx.currentTime + 0.03);
-                }
+            init() { if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)(); },
+            playClick() {
+                this.init(); const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
+                osc.type = 'sine'; osc.frequency.setValueAtTime(600, this.ctx.currentTime);
+                gain.gain.setValueAtTime(0.1, this.ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.05);
+                osc.connect(gain); gain.connect(this.ctx.destination); osc.start(); osc.stop(this.ctx.currentTime + 0.05);
+            },
+            playCorrect() {
+                this.init(); const now = this.ctx.currentTime;
+                [523.25, 659.25, 783.99].forEach((f, i) => {
+                    const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
+                    osc.frequency.setValueAtTime(f, now + i*0.08); gain.gain.setValueAtTime(0.1, now + i*0.08);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + i*0.08 + 0.15);
+                    osc.connect(gain); gain.connect(this.ctx.destination); osc.start(now + i*0.08); osc.stop(now + i*0.08 + 0.15);
+                });
+            },
+            playWrong() {
+                this.init(); const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
+                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(120, this.ctx.currentTime);
+                osc.frequency.linearRampToValueAtTime(80, this.ctx.currentTime + 0.3);
+                gain.gain.setValueAtTime(0.15, this.ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
+                osc.connect(gain); gain.connect(this.ctx.destination); osc.start(); osc.stop(this.ctx.currentTime + 0.3);
+            },
+            playMystery() {
+                this.init(); const now = this.ctx.currentTime;
+                const notes = [110, 130.81, 146.83, 164.81];
+                notes.forEach((f, i) => {
+                    const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
+                    osc.type = 'triangle'; osc.frequency.setValueAtTime(f, now + i*0.2);
+                    gain.gain.setValueAtTime(0.1, now + i*0.2); gain.gain.exponentialRampToValueAtTime(0.001, now + i*0.2 + 0.5);
+                    osc.connect(gain); gain.connect(this.ctx.destination); osc.start(now + i*0.2); osc.stop(now + i*0.2 + 0.5);
+                });
+            },
+            playWin() {
+                this.init(); const now = this.ctx.currentTime;
+                [261.63, 329.63, 392.00, 523.25].forEach((f, i) => {
+                    const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
+                    osc.frequency.setValueAtTime(f, now + i*0.1); gain.gain.setValueAtTime(0.15, now + i*0.1);
+                    gain.gain.exponentialRampToValueAtTime(0.02, now + i*0.1 + 0.4);
+                    osc.connect(gain); gain.connect(this.ctx.destination); osc.start(now + i*0.1); osc.stop(now + i*0.1 + 0.4);
+                });
             }
         };
-        setInterval(() => { 
-            if(document.getElementById('box-game').classList.contains('hidden') === false) {
-                AudioFX.play('tick'); 
-            }
-        }, 1000);
+        function tapFX(type) {
+            try {
+                if(type === 'click') AudioFX.playClick();
+                if(type === 'correct') AudioFX.playCorrect();
+                if(type === 'wrong') AudioFX.playWrong();
+                if(type === 'mystery') AudioFX.playMystery();
+                if(type === 'win') AudioFX.playWin();
+            } catch(e) { console.log("Audio API tidak disokong"); }
+        }
     </script>
 
-    <header class="w-full max-w-6xl mx-auto text-center py-2 z-10 relative">
-        <div class="inline-flex items-center gap-2 bg-amber-500/10 px-4 py-1 rounded-full border border-amber-500/30 mb-1">
-            <span class="animate-pulse text-amber-500">🕵️‍♂️</span>
-            <span class="text-[11px] font-bold tracking-widest text-amber-400 uppercase typewriter-font">BILIK SIASATAN INTEGRITI #2026</span>
+    <header class="w-full max-w-7xl mx-auto text-center py-2 z-10 relative">
+        <div class="inline-flex items-center gap-2 bg-yellow-500/10 px-4 py-1 rounded-full border border-yellow-500/30 mb-1 detective-lamp">
+            <span class="text-yellow-500">🕵️‍♂️</span>
+            <span class="text-[10px] font-bold tracking-widest text-yellow-400 uppercase typewriter-font">BILIK SIASATAN UTAMA: AMANAH</span>
         </div>
-        <h1 class="text-2xl md:text-4xl font-black tracking-tight bg-gradient-to-r from-yellow-500 via-amber-200 to-amber-500 bg-clip-text text-transparent typewriter-font uppercase">
+        <h1 class="text-2xl md:text-4xl font-black tracking-tight bg-gradient-to-r from-yellow-500 via-amber-200 to-amber-600 bg-clip-text text-transparent typewriter-font uppercase">
             Misi Detektif Amanah
         </h1>
     </header>
 
-    <main class="flex-grow flex items-center justify-center my-2 z-10 relative w-full max-w-6xl mx-auto px-2">
-        
-        <div id="custom-modal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
-            <div class="bg-slate-900 border-2 border-amber-500 p-6 rounded-2xl max-w-md w-full text-center shadow-2xl relative">
-                <div id="modal-icon" class="text-5xl mb-3">⚠️</div>
-                <h3 id="modal-title" class="text-xl font-bold text-amber-500 mb-2 typewriter-font">Maklumat Siasatan</h3>
-                <p id="modal-msg" class="text-slate-300 text-sm mb-5 leading-relaxed"></p>
-                <button id="modal-btn-primary" onclick="AudioFX.play('tick'); tutupModal();" class="w-full py-2.5 bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-slate-950 font-bold rounded-xl transition uppercase tracking-wider text-sm">
+    <div id="custom-modal" class="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 hidden backdrop-blur-sm">
+        <div class="bg-stone-900 border-2 border-amber-600 p-6 rounded-none max-w-md w-full text-center shadow-2xl relative typewriter-font">
+            <div id="modal-icon" class="text-4xl mb-2">⚠️</div>
+            <h3 id="modal-title" class="text-lg font-bold text-amber-500 mb-2 uppercase tracking-wide border-b border-amber-800 pb-1">Maklumat Siasatan</h3>
+            <p id="modal-msg" class="text-stone-300 text-xs mb-5 leading-relaxed text-left font-mono"></p>
+            <div class="flex gap-3 justify-center">
+                <button id="modal-btn-primary" class="w-full py-2 bg-amber-600 hover:bg-amber-700 text-stone-950 font-bold transition duration-200 uppercase text-xs tracking-wider">
                     Teruskan Siasatan
+                </button>
+                <button id="modal-btn-secondary" onclick="tutupModal(); tapFX('click');" class="w-full py-2 bg-stone-800 hover:bg-stone-750 text-stone-300 font-bold transition duration-200 uppercase text-xs tracking-wider hidden">
+                    Batal
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="wallet-modal" class="fixed inset-0 bg-black/85 z-40 flex items-center justify-center p-4 hidden backdrop-blur-xs">
+        <div class="vintage-paper p-6 rounded-none max-w-lg w-full shadow-2xl relative max-h-[85vh] overflow-y-auto courier-font border-4 border-stone-950">
+            <button onclick="tutupDompet(); tapFX('click');" class="absolute top-2 right-4 text-stone-900 text-3xl font-bold" style="padding: 10px;">&times;</button>
+            <div class="flex items-center gap-3 mb-3 border-b-2 border-stone-950 pb-2">
+                <span class="text-2xl">💼</span>
+                <h3 class="text-lg font-bold uppercase tracking-wider text-stone-900">Eksibit A: Kandungan Dompet Misteri</h3>
+            </div>
+            
+            <div class="space-y-4 text-xs text-stone-900">
+                <div class="border border-dashed border-stone-800 p-2.5 bg-stone-100/50">
+                    <span class="font-bold block text-emerald-800">💵 WANG TUNAI:</span>
+                    <p>5 keping wang kertas RM10, 2 keping RM5 <span class="font-bold">(Jumlah keseluruhan: RM60)</span></p>
+                </div>
+                <div class="border border-dashed border-stone-800 p-2.5 bg-stone-100/50">
+                    <span class="font-bold block text-blue-800">🪪 DOKUMEN PENGENALAN (MyKad):</span>
+                    <p><strong>Nama:</strong> Annisa binti Ismail (Kelas 6 Ibnu Sina - <span class="bg-amber-300 px-1 font-bold">Individu C</span>)</p>
+                    <p><strong>No. MyKad:</strong> 140612-08-0123</p>
+                    <p><strong>Kediaman:</strong> No. 12, Jalan Amanah, Ampang, Selangor.</p>
+                </div>
+                <div class="border border-dashed border-stone-800 p-2.5 bg-stone-100/50">
+                    <span class="font-bold block text-purple-800">💳 KAD ELEKTRONIK:</span>
+                    <p>Kad Debit Bank Islam Malaysia Berhad (Pemilik: Annisa Ismail)</p>
+                </div>
+                <div class="bg-amber-100 p-3 border-l-4 border-amber-600 italic">
+                    <span class="font-bold block not-italic text-stone-900">📝 NOTA KECIL DI TEMUI:</span>
+                    "Pesan ayah: Pegang kuat sifat amanah walau di mana jua. Kejayaan sebenar lahir daripada integriti diri."
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <main class="flex-grow flex items-center justify-center my-2 w-full max-w-7xl mx-auto z-10 relative">
+        
+        <div id="box-login" class="w-full max-w-xl bg-stone-900/90 border-2 border-stone-800 p-5 md:p-6 rounded-none shadow-2xl transition-all duration-300 flex flex-col justify-between case-file-zoom">
+            <div>
+                <div class="border-b border-amber-600/30 pb-3 mb-4 text-left">
+                    <span class="text-[10px] font-bold text-amber-500 uppercase tracking-widest typewriter-font block mb-1">📁 FAIL KES #2026-AMANAH</span>
+                    <p class="text-xs text-stone-400 font-mono leading-relaxed">
+                        Sebuah dompet murid telah tercicir di luar sekolah. Tugas anda adalah mencari pemiliknya dengan menggunakan sifat amanah dan jujur. Sila daftar nama anda untuk mulakan siasatan!
+                    </p>
+                </div>
+
+                <div class="space-y-4">
+                    <div class="text-left">
+                        <label for="input-name" class="block text-[11px] font-bold text-stone-400 uppercase tracking-wider mb-2 font-mono">Daftar Nama Detektif Bertugas:</label>
+                        <input type="text" id="input-name" placeholder="Taip nama anda di sini..." class="w-full bg-black border border-stone-700 focus:border-amber-500 rounded-none px-4 py-2.5 text-stone-200 font-mono placeholder-stone-700 outline-none transition duration-200 text-sm">
+                    </div>
+                    
+                    <button onclick="mulaGame()" class="w-full py-3 bg-amber-600 hover:bg-amber-700 text-stone-950 font-bold rounded-none transition duration-200 uppercase tracking-wider text-xs typewriter-font shadow-lg">
+                        Buka Fail Siasatan 🔍
+                    </button>
+                </div>
+            </div>
+
+            <div class="border-t border-stone-800 mt-6 pt-4 text-left font-mono text-[10px]">
+                <span class="text-amber-500 font-bold uppercase tracking-wider block mb-2 typewriter-font"><i class="fas fa-medal mr-1"></i> Skala Gred Siasatan Jabatan</span>
+                <div class="grid grid-cols-2 gap-2 text-stone-400">
+                    <div class="bg-black/40 p-2 border border-stone-800"><b class="text-yellow-500">Gred A (140 Pts):</b> Detektif Amanah Terpuji</div>
+                    <div class="bg-black/40 p-2 border border-stone-800"><b class="text-emerald-500">Gred B (100 Pts):</b> Detektif Jujur Cemerlang</div>
+                    <div class="bg-black/40 p-2 border border-stone-800"><b class="text-blue-500">Gred C (70 Pts):</b> Detektif Muda</div>
+                    <div class="bg-black/40 p-2 border border-stone-800"><b class="text-rose-500">Gred G (&lt;70 Pts):</b> Siasatan Gagal</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="box-game" class="w-full grid grid-cols-1 lg:grid-cols-3 gap-4 hidden transition-all duration-300">
+            
+            <div class="lg:col-span-2 bg-stone-900/95 border border-stone-800 p-4 md:p-6 flex flex-col justify-between case-file-zoom relative">
+                
+                <div class="flex justify-between items-center mb-4 border-b border-stone-800 pb-2">
+                    <span id="game-level" class="bg-amber-600/10 text-amber-500 px-3 py-1 text-[10px] font-bold uppercase border border-amber-600/30 tracking-widest typewriter-font">Tahap 1</span>
+                    <div class="w-1/3 bg-stone-950 h-1.5 border border-stone-800 rounded-none overflow-hidden">
+                        <div id="progress-bar" class="bg-amber-600 h-full transition-all duration-500" style="width: 14%;"></div>
+                    </div>
+                    <div class="flex gap-2 text-[11px] font-mono">
+                        <span class="text-stone-400">Skor: <span id="game-score" class="text-amber-500 font-bold">0</span></span>
+                        <span class="text-stone-400">Nyawa: <span id="game-lives" class="text-rose-500 font-bold">3</span>❤️</span>
+                    </div>
+                </div>
+
+                <div class="vintage-paper p-4 md:p-6 border-l-8 border-amber-777 text-left mb-4 shadow-md">
+                    <span id="situation-title" class="text-[10px] text-stone-500 font-bold uppercase tracking-wider courier-font block border-b border-stone-300 pb-1 mb-2">FAIL SIASATAN TAHAP:</span>
+                    <p id="game-situation" class="text-stone-900 text-xs md:text-sm font-semibold courier-font leading-relaxed"></p>
+                </div>
+
+                <div class="text-left mb-4">
+                    <h3 id="game-question" class="text-sm md:text-base font-bold text-white tracking-wide font-mono"></h3>
+                </div>
+
+                <div id="options-container" class="space-y-2 mb-4"></div>
+
+                <!-- BAHAGIAN STRATEGIK: JUSTIFIKASI JAWAPAN (TP5) -->
+                <div id="justification-container" class="text-left mb-4 hidden font-mono">
+                    <label for="input-justification" class="block text-[11px] font-bold text-amber-500 uppercase tracking-wider mb-2">Mengapa kamu memilih jawapan tersebut? (Berikan Alasan/Justifikasi):</label>
+                    <textarea id="input-justification" placeholder="Tuliskan alasan rasional atau sebab anda memilih jawapan tersebut di sini..." class="w-full h-20 bg-black border border-stone-700 focus:border-amber-500 p-2 text-stone-200 text-xs outline-none rounded-none placeholder-stone-800 resize-none"></textarea>
+                </div>
+
+                <!-- BAHAGIAN STRATEGIK: PELAN TINDAKAN/AMALAN (TP6) -->
+                <div id="action-plan-container" class="text-left mb-4 hidden font-mono space-y-3">
+                    <p class="text-[11px] font-bold text-amber-500 uppercase tracking-wider border-b border-stone-800 pb-1">Nyatakan tiga (3) amalan amanah yang akan kamu lakukan di sekolah atau di rumah mulai hari ini:</p>
+                    <div>
+                        <label class="block text-[10px] text-stone-400">Amalan 1:</label>
+                        <input type="text" id="input-plan-1" placeholder="Contoh: Memulangkan barang yang dipinjam tepat pada masanya." class="w-full bg-black border border-stone-700 focus:border-amber-500 px-3 py-1.5 text-stone-200 text-xs outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] text-stone-400">Amalan 2:</label>
+                        <input type="text" id="input-plan-2" placeholder="Contoh: Menjaga rahsia rakan yang diamanahkan kepada saya." class="w-full bg-black border border-stone-700 focus:border-amber-500 px-3 py-1.5 text-stone-200 text-xs outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] text-stone-400">Amalan 3:</label>
+                        <input type="text" id="input-plan-3" placeholder="Contoh: Menyiapkan semua tugasan sekolah sendiri tanpa meniru." class="w-full bg-black border border-stone-700 focus:border-amber-500 px-3 py-1.5 text-stone-200 text-xs outline-none">
+                    </div>
+                </div>
+
+                <div id="game-feedback" class="text-center font-bold text-xs min-h-[40px] flex items-center justify-center px-4 transition-all duration-200 font-mono"></div>
+
+                <button id="btn-next" onclick="bukaDecoderGate(); tapFX('click');" class="w-full mt-2 py-3 bg-stone-200 hover:bg-white text-stone-950 font-bold transition duration-200 flex items-center justify-center gap-2 text-xs uppercase tracking-wider typewriter-font hidden">
+                    <span>Proses Kod Rahsia & Dekod</span> ➡️
+                </button>
+            </div>
+
+            <div class="flex flex-col gap-4">
+                
+                <div class="evidence-board p-4 flex-grow text-left flex flex-col justify-between min-h-[250px]">
+                    <div>
+                        <div class="flex items-center gap-2 border-b border-stone-800 pb-1 mb-3">
+                            <span class="text-red-500 text-xs">📌</span>
+                            <span class="text-[11px] font-bold text-stone-300 tracking-wider uppercase typewriter-font">Papan Bukti Jenayah / Kes</span>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-2">
+                            <div class="bg-[#fcf8e3] text-stone-900 p-2 shadow rotate-[-1deg] border border-stone-300 text-[10px] font-mono red-string">
+                                <span class="font-bold block text-red-700">🔎 SASARAN UTAMA</span>
+                                Cari pemilik asal dompet tercicir di sekolah.
+                            </div>
+                            <div class="bg-[#f5f5f5] text-stone-900 p-2 shadow rotate-[2deg] border border-stone-300 text-[10px] font-mono">
+                                <span class="font-bold block text-blue-700">📋 BARANG KES</span>
+                                Dompet mengandungi wang berjumlah RM60 dan MyKad.
+                            </div>
+                        </div>
+                        
+                        <div class="mt-3 p-2 bg-stone-950/80 border border-stone-800 text-[10px] font-mono text-amber-400/90">
+                            <span class="block text-stone-400 font-bold uppercase tracking-wide">💡 Rantaian Kesimpulan:</span>
+                            Sifat amanah menuntut pengembalian hak sepenuhnya tanpa manipulasi.
+                        </div>
+                    </div>
+
+                    <div class="mt-4 pt-2 border-t border-stone-800/60 font-mono">
+                        <span class="text-[10px] font-bold text-stone-400 uppercase tracking-wide block mb-1.5"><i class="fas fa-list-ol mr-1"></i> Log Fail Detektif Kelas</span>
+                        <div class="overflow-y-auto max-h-[120px] space-y-1 text-[10px] pr-1" id="leaderboard-list"></div>
+                    </div>
+                </div>
+
+                <div class="bg-stone-950 border border-stone-800 p-3 text-left">
+                    <span class="text-[10px] font-bold text-stone-500 uppercase tracking-wider block mb-2 font-mono">🎒 Beg Inventori Detektif:</span>
+                    <div class="flex gap-2">
+                        <button onclick="bukaDompet(); tapFX('mystery');" class="flex-1 bg-stone-900 hover:bg-stone-800 border border-amber-600/40 p-2 flex flex-col items-center justify-center transition group active:scale-95">
+                            <span class="text-xl group-hover:scale-110 transition duration-150">💼</span>
+                            <span class="text-[9px] font-bold text-amber-500 uppercase font-mono mt-1">Eksibit Dompet</span>
+                        </button>
+                        <div class="w-12 bg-stone-900/40 border border-stone-900 flex items-center justify-center text-xs opacity-30 select-none">🔍</div>
+                        <div class="w-12 bg-stone-900/40 border border-stone-900 flex items-center justify-center text-xs opacity-30 select-none">🗂️</div>
+                        <div class="w-12 bg-stone-900/40 border border-stone-900 flex items-center justify-center text-xs opacity-30 select-none">🗝️</div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <div id="box-code-reveal" class="w-full max-w-md bg-stone-900 border-2 border-stone-800 p-6 text-center hidden case-file-zoom font-mono">
+            <div class="text-3xl mb-2 text-amber-500">🗝️</div>
+            <h3 class="text-base font-bold text-amber-400 mb-1 uppercase tracking-wider typewriter-font">Pintu Dekod Bilik Rahsia</h3>
+            <p class="text-[11px] text-stone-400 mb-4">Sila taip semula kod enkripsi rahsia peringkat ini untuk mengesahkan data siasatan!</p>
+            
+            <div class="bg-black p-3 border border-stone-800 mb-4">
+                <p id="code-reveal-clue" class="text-[11px] text-stone-400 italic mb-2"></p>
+                <div class="text-3xl font-black text-amber-500 tracking-wider uppercase typewriter-font" id="revealed-letter">-</div>
+            </div>
+
+            <div class="space-y-3 mb-4 text-left">
+                <label for="input-gate-code" class="block text-[10px] font-bold text-stone-400 uppercase tracking-wider">Masukkan Kod Enkripsi Semula:</label>
+                <input type="text" id="input-gate-code" placeholder="..." class="w-full bg-black border border-stone-700 focus:border-amber-500 px-4 py-2 text-amber-400 font-bold text-center text-lg outline-none uppercase font-mono" autocomplete="off" autocapitalize="characters">
+                <p id="decoder-error" class="text-[11px] text-rose-500 font-semibold text-center hidden">❌ Kod dekod tidak sepadan! Sila masukkan semula.</p>
+            </div>
+
+            <button onclick="sahkanKodGate()" class="w-full py-2 bg-amber-600 hover:bg-amber-700 text-stone-950 font-bold text-xs tracking-wider uppercase typewriter-font">
+                🔓 Sahkan & Kemas Kini Fail Peringkat
+            </button>
+        </div>
+
+        <div id="box-code-puzzle" class="w-full max-w-md bg-stone-900 border-2 border-stone-800 p-6 text-center hidden case-file-zoom font-mono">
+            <div class="text-3xl mb-2 text-yellow-500">🔓</div>
+            <h3 class="text-base font-bold text-amber-400 mb-1 uppercase typewriter-font">Kesimpulan Rangkaian Kod Misi</h3>
+            <p class="text-[11px] text-stone-400 mb-4">Susun semua serpihan abjad di bawah mengikut urutan nilai murni utama yang menjadi subjek kes ini.</p>
+            
+            <div class="bg-black p-4 border border-stone-800 mb-4">
+                <p class="text-[10px] text-stone-500 mb-2 uppercase tracking-widest font-bold">Susunan Frasa Kunci:</p>
+                <div id="puzzle-slots" class="flex justify-center gap-2 min-h-[40px] items-center"></div>
+            </div>
+
+            <div class="mb-5">
+                <p class="text-[10px] text-stone-400 mb-2">Blok Abjad Tersedia:</p>
+                <div id="puzzle-letter-pool" class="flex justify-center gap-2 flex-wrap"></div>
+            </div>
+
+            <div class="flex gap-2">
+                <button onclick="padamSusunanPuzzle(); tapFX('click');" class="w-1/3 py-2 bg-stone-800 hover:bg-stone-750 text-stone-300 font-bold text-xs uppercase tracking-wider font-mono">Padam</button>
+                <button onclick="sahkanPuzzleAkhir()" class="w-2/3 py-2 bg-amber-600 hover:bg-amber-700 text-stone-950 font-bold text-xs uppercase tracking-wider typewriter-font shadow-md">Sahkan Kod Misi 🏆</button>
+            </div>
+            <p id="puzzle-error" class="text-[11px] text-rose-500 font-semibold text-center mt-3 hidden">❌ Susunan frasa kunci tersasar! Pastikan ia ejaan nilai murni utama.</p>
+        </div>
+
+        <div id="box-reflection" class="w-full max-w-md bg-stone-900 border border-stone-800 p-6 text-center hidden case-file-zoom font-mono">
+            <div class="mb-4 border-b border-stone-800 pb-3">
+                <div class="inline-block bg-emerald-500/10 text-emerald-400 text-[10px] px-3 py-0.5 border border-emerald-500/20 font-bold uppercase mb-1">🎉 SIASATAN UTAMA SELESAI</div>
+                <h2 class="text-base font-bold text-white uppercase typewriter-font">Penilaian Kefahaman Detektif</h2>
+                <p class="text-[11px] text-stone-400 mt-1">Sila catat tahap kefahaman anda tentang sifat Amanah melalui permainan ini.</p>
+            </div>
+
+            <div class="my-6">
+                <p class="text-xs text-stone-300 mb-3 font-semibold">Berapakah bintang tahap kefahaman anda?</p>
+                
+                <div class="flex justify-center gap-3 text-3xl my-2 star-rating">
+                    <i class="far fa-star cursor-pointer text-stone-600 transition" onclick="pilihBintangKefahaman(1)" id="star-1"></i>
+                    <i class="far fa-star cursor-pointer text-stone-600 transition" onclick="pilihBintangKefahaman(2)" id="star-2"></i>
+                    <i class="far fa-star cursor-pointer text-stone-600 transition" onclick="pilihBintangKefahaman(3)" id="star-3"></i>
+                    <i class="far fa-star cursor-pointer text-stone-600 transition" onclick="pilihBintangKefahaman(4)" id="star-4"></i>
+                    <i class="far fa-star cursor-pointer text-stone-600 transition" onclick="pilihBintangKefahaman(5)" id="star-5"></i>
+                </div>
+                
+                <p id="star-desc" class="text-[11px] text-amber-500 font-bold mt-2 h-4 italic">Sila pilih bintang...</p>
+            </div>
+
+            <div id="sheet-sending-status" class="text-[11px] text-amber-500 text-center font-bold py-1 hidden animate-pulse mb-3">
+                <i class="fas fa-spinner fa-spin mr-1"></i> Mengirim rekod skala kefahaman ke pelayan Sheets guru...
+            </div>
+
+            <button onclick="hantarPenilaianBintang()" id="btn-submit-rating" disabled class="w-full py-3 bg-stone-800 text-stone-500 font-black uppercase tracking-wider text-xs typewriter-font shadow-lg cursor-not-allowed">
+                Sahkan & Log Keluar Fail Siasatan 📄
+            </button>
+        </div>
+
+        <div id="box-end" class="w-full max-w-2xl bg-stone-900 border-2 border-stone-800 p-5 md:p-6 text-center hidden case-file-zoom font-mono">
+            <div id="end-badge" class="text-5xl mb-2">🏆</div>
+            <h2 id="end-title" class="text-xl md:text-2xl font-bold mb-2 uppercase typewriter-font">MISI SELESAI</h2>
+            
+            <p id="end-msg" class="text-stone-300 text-xs leading-relaxed mb-5 text-left border border-stone-800 p-3 bg-black/40"></p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 text-left text-xs">
+                <div class="bg-black/80 border border-stone-800 p-4 flex flex-col justify-between">
+                    <div>
+                        <span class="text-[10px] text-stone-500 uppercase block mb-1">Rekod Skor Keseluruhan</span>
+                        <div class="text-3xl font-bold text-amber-500"><span id="end-score">0</span><span class="text-stone-500 text-lg">/140 Pts</span></div>
+                        <div class="mt-2 text-[10px] bg-stone-900 px-2 py-1 inline-block border border-stone-800">
+                            Pangkat: <span id="end-evaluation" class="font-bold text-amber-400">-</span>
+                        </div>
+                        <div class="mt-1 text-[10px] text-stone-400 block">
+                            Kefahaman Anda: <span id="end-rating-display" class="font-bold text-yellow-500">-</span>
+                        </div>
+                        <div id="display-text-evidence" class="mt-2 text-[9px] text-stone-300 border-t border-stone-800 pt-2 space-y-1 overflow-y-auto max-h-[100px]">
+                            <!-- Evidens Justifikasi & Amalan Akan Dipaparkan Di Sini Secara Dinamik -->
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4 pt-3 border-t border-stone-800 text-[10px]">
+                        <span class="text-stone-500 uppercase block mb-1.5 font-bold">Panel Pentadbir (Guru):</span>
+                        <button onclick="mintaPengesahanPadam(); tapFX('click');" class="w-full py-1.5 bg-rose-950/40 hover:bg-rose-950 text-rose-400 font-bold border border-rose-900/60 transition mb-1.5 text-[9px] uppercase tracking-wide">
+                            🗑️ Reset Kedudukan Kelas
+                        </button>
+                        <button onclick="muatTurunRekodCSV(); tapFX('click');" class="w-full py-2 bg-amber-600 hover:bg-amber-700 text-stone-950 font-bold text-[10px] uppercase tracking-wide">
+                            📥 Muat Turun Data Murid (.CSV)
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-black/80 border border-stone-800 p-4 flex flex-col">
+                    <span class="text-[10px] text-stone-400 font-bold uppercase tracking-wide block pb-1 border-b border-stone-800 mb-2">📊 Kedudukan Kedekutifan Kelas</span>
+                    <div class="overflow-y-auto max-h-[140px] space-y-1 text-[10px]" id="leaderboard-list-end"></div>
+                </div>
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-2">
+                <button onclick="mainSemula(); tapFX('click');" class="flex-1 py-2.5 bg-amber-600 hover:bg-amber-700 text-stone-950 font-bold text-xs uppercase tracking-wider typewriter-font">
+                    Main Semula Kes 🔄
+                </button>
+                <button onclick="cetakLaporanRefleksi(); tapFX('click');" class="flex-1 py-2.5 bg-stone-800 hover:bg-stone-750 text-stone-200 font-bold text-xs uppercase tracking-wider font-mono border border-stone-700">
+                    Cetak Fail Laporan 🖨️
                 </button>
             </div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 w-full items-start">
-            
-            <div class="lg:col-span-2 space-y-4">
-                
-                <div id="box-login" class="w-full glass-panel p-5 md:p-6 rounded-2xl neon-glow-gold transition-all lamp-glow text-left">
-                    <div class="bg-amber-950/40 p-4 rounded-xl mb-4 border border-amber-800/60">
-                        <span class="text-xs font-bold text-amber-400 uppercase tracking-widest block mb-2 typewriter-font">📂 ARAHAN MASUK FAIL KES</span>
-                        <p class="text-xs md:text-sm text-slate-300 leading-relaxed mb-3">
-                            Selamat datang ke Pejabat Detektif. Cuaca di luar sedang hujan lebat, dan sebuah kes kecemasan baru sahaja didaftarkan. Anda menerima tugasan untuk membuka fail bukti kes <strong>Dompet Yang Terjatuh</strong>.
-                        </p>
-                    </div>
-
-                    <div class="space-y-3">
-                        <div>
-                            <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1.5">Nama Penuh Detektif:</label>
-                            <input type="text" id="input-name" oninput="AudioFX.play('taip')" placeholder="Sila taip nama anda..." class="w-full bg-slate-950 border border-slate-800 focus:border-amber-500 rounded-xl px-4 py-2.5 text-slate-200 text-sm outline-none transition">
-                        </div>
-                        <button onclick="mulaGame()" class="w-full py-3 bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-slate-950 font-extrabold rounded-xl transition transform hover:-translate-y-0.5 tracking-wider uppercase text-xs typewriter-font">
-                            📂 AMBIL FAIL & MULA SIASATAN
-                        </button>
-                    </div>
-                </div>
-
-                <div id="box-evidence-file" class="w-full glass-panel p-5 rounded-2xl border-amber-600/30 hidden text-left anim-fail-buka">
-                    <div class="border-b-2 border-dashed border-amber-500/30 pb-2 mb-4 flex justify-between items-center">
-                        <h2 id="evidence-folder-title" class="text-lg font-bold text-amber-500 typewriter-font">📂 FAIL KES #01</h2>
-                        <span id="rank-badge-live" class="text-[10px] font-bold uppercase tracking-widest bg-slate-800 text-yellow-400 border border-slate-700 px-2 py-0.5 rounded">🔍 REKRUT DETEKTIF</span>
-                    </div>
-
-                    <div class="bg-amber-900/10 p-4 rounded-xl border border-amber-900/40 space-y-2 mb-4 text-xs md:text-sm font-mono text-slate-300">
-                        <p><span class="text-amber-500 font-bold">📆 MASA:</span> <span id="ev-time">9.30 Pagi</span></p>
-                        <p><span class="text-amber-500 font-bold">📍 LOKASI:</span> <span id="ev-location">Koridor Blok C</span></p>
-                        <div class="pt-2 border-t border-slate-800">
-                            <span class="text-amber-400 font-bold block mb-1">🔍 BUKTI KES/SITUASI DITEMUI:</span>
-                            <p id="ev-description" class="text-slate-200 font-sans leading-relaxed"></p>
-                        </div>
-                    </div>
-
-                    <button onclick="periksaBuktiSoalan()" class="w-full py-3 bg-amber-500 hover:bg-amber-600 text-slate-950 font-black rounded-xl transition flex items-center justify-center gap-2 tracking-wider text-xs uppercase typewriter-font">
-                        🔎 Periksa Bukti (Jawab Soalan)
-                    </button>
-                </div>
-
-                <div id="box-game" class="w-full glass-panel p-5 rounded-2xl border-amber-600/30 hidden text-left">
-                    <div class="flex justify-between items-center mb-3">
-                        <span id="game-level" class="bg-amber-500/20 text-amber-400 px-2.5 py-0.5 rounded-full text-[10px] font-bold border border-amber-500/30 uppercase tracking-widest">Tahap 1</span>
-                        <div class="w-1/3 bg-slate-950 rounded-full h-1.5 overflow-hidden border border-slate-800">
-                            <div id="progress-bar" class="bg-gradient-to-r from-amber-500 to-yellow-500 h-1.5 rounded-full transition-all duration-500" style="width: 20%;"></div>
-                        </div>
-                    </div>
-
-                    <div class="mb-4">
-                        <span class="text-[10px] text-slate-400 font-bold block uppercase mb-1 tracking-wider">SOALAN PENYELIDIKAN:</span>
-                        <h3 id="game-question" class="text-sm md:text-base font-bold text-white leading-snug font-sans"></h3>
-                    </div>
-
-                    <div id="options-container" class="space-y-2 mb-4"></div>
-                    <div id="game-feedback" class="text-center font-bold text-xs min-h-[40px] flex items-center justify-center rounded-xl transition-all mb-4"></div>
-
-                    <div class="grid grid-cols-2 gap-3 border-t border-slate-800 pt-3 text-[11px]">
-                        <div class="flex items-center justify-center gap-2 bg-slate-950/40 py-1.5 rounded-lg border border-slate-800/60">
-                            <span class="text-slate-400">Status Nyawa:</span>
-                            <div class="flex items-center gap-0.5">
-                                <span id="game-lives" class="text-red-400 font-extrabold">3</span>
-                                <span class="text-red-500">❤️</span>
-                            </div>
-                        </div>
-                        <div class="flex items-center justify-center gap-2 bg-slate-950/40 py-1.5 rounded-lg border border-slate-800/60">
-                            <span class="text-slate-400">Skor Siasatan:</span>
-                            <span id="game-score" class="text-yellow-400 font-extrabold">0</span>
-                        </div>
-                    </div>
-
-                    <button id="btn-next" onclick="bukaDecoderGate()" class="w-full mt-4 py-3 bg-slate-100 hover:bg-slate-200 text-slate-950 font-bold rounded-xl transition flex items-center justify-center gap-2 text-xs uppercase hidden">
-                        <span>Dapatkan Kod Rahsia & Dekod</span> <span>➡️</span>
-                    </button>
-                </div>
-
-                <div id="box-code-reveal" class="w-full glass-panel p-5 rounded-2xl text-center hidden">
-                    <div class="text-4xl mb-2 text-amber-500">🗝️</div>
-                    <h3 class="text-md font-bold text-amber-400 mb-1 typewriter-font">Pintu Dekod Keselamatan Kes</h3>
-                    
-                    <div class="bg-slate-950/80 p-3 rounded-xl border border-amber-500/20 mb-3 text-xs">
-                        <p id="code-reveal-clue" class="text-slate-400 italic mb-1"></p>
-                        <div class="text-3xl font-black text-amber-400 tracking-wider uppercase typewriter-font" id="revealed-letter">-</div>
-                    </div>
-
-                    <div class="space-y-2 text-left mb-3">
-                        <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">Sahkan & Taip Kod Di Atas:</label>
-                        <input type="text" id="input-gate-code" placeholder="Sila taip huruf kod..." class="w-full bg-slate-950 border border-amber-500/40 rounded-lg py-2 text-slate-100 placeholder-slate-800 outline-none uppercase font-bold text-center text-md">
-                        <p id="decoder-error" class="text-[11px] text-red-400 font-semibold text-center hidden">❌ Kod salah! Sila semak semula.</p>
-                    </div>
-
-                    <button onclick="sahkanKodGate()" class="w-full py-2.5 bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-slate-950 font-bold rounded-lg text-xs tracking-wider uppercase">
-                        🔓 Sahkan & Buka Fail Seterusnya
-                    </button>
-                </div>
-
-                <div id="box-reflection" class="w-full glass-panel p-5 rounded-2xl hidden text-left">
-                    <div id="box-animation-victory" class="bg-slate-950 border-2 border-emerald-500/30 p-4 rounded-xl text-center mb-4 hidden">
-                        <div class="text-4xl mb-1">🚓 😊 🏅 🎉</div>
-                        <h4 class="text-emerald-400 font-bold text-sm typewriter-font mb-1">ANIMASI KES SELESAI</h4>
-                        <p class="text-[11px] text-slate-300">Kereta polis tiba bersama pemilik dompet! Murid tersenyum mengucapkan ribuan terima kasih, manakala Guru Besar hadir menyampaikan Sijil Pentadbir Integriti Bersama Badge Kehormat Detektif Amanah!</p>
-                    </div>
-
-                    <h2 class="text-md font-bold text-white mb-2 uppercase tracking-wide typewriter-font">📝 BORANG REFLEKSI & LAPORAN SIASATAN KES</h2>
-                    
-                    <div id="loading-sender" class="hidden bg-amber-500/20 border border-amber-500 p-3 rounded-xl text-center text-xs text-amber-400 mb-3 animate-pulse">
-                        ⏳ Menghantar data keputusan kes ke pangkalan data cikgu... Sila tunggu sebentar.
-                    </div>
-
-                    <form id="form-reflection" onsubmit="hantarRefleksi(event)" class="space-y-2 text-[11px]">
-                        <div>
-                            <label class="block text-slate-300 font-semibold mb-0.5">1. Apakah maksud amanah yang anda fahami?</label>
-                            <textarea required id="ref-q1" rows="2" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-slate-200 outline-none"></textarea>
-                        </div>
-                        <div>
-                            <label class="block text-slate-300 font-semibold mb-0.5">2. Nyatakan dalil tuntutan amanah (Surah & Ayat).</label>
-                            <input type="text" required id="ref-q2" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-slate-200 outline-none">
-                        </div>
-                        <div>
-                            <label class="block text-slate-300 font-semibold mb-0.5">3. Senaraikan dua kepentingan utama sifat amanah.</label>
-                            <textarea required id="ref-q3" rows="2" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-slate-200 outline-none"></textarea>
-                        </div>
-                        <div>
-                            <label class="block text-slate-300 font-semibold mb-0.5">4. Apakah pengajaran terbesar kes amanah ini bagi diri anda?</label>
-                            <textarea required id="ref-q4" rows="2" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-slate-200 outline-none"></textarea>
-                        </div>
-                        <button type="submit" id="btn-submit-reflection" class="w-full py-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-slate-950 font-black rounded-xl text-xs uppercase tracking-wider typewriter-font">
-                            Hantar Penilaian & Kemukakan Laporan Fail Kes 📄
-                        </button>
-                    </form>
-                </div>
-
-                <div id="box-end" class="w-full glass-panel p-5 rounded-2xl text-center hidden">
-                    <div id="end-badge" class="text-5xl mb-2">🏆</div>
-                    <h2 id="end-title" class="text-xl font-extrabold mb-1 text-yellow-500 typewriter-font">MISI SELESAI</h2>
-                    <p id="end-msg" class="text-slate-300 text-xs leading-relaxed mb-4"></p>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-left text-xs mb-4">
-                        <div class="bg-slate-950 border border-slate-800 p-3 rounded-xl">
-                            <span class="text-[10px] text-slate-500 uppercase block mb-0.5">Skor Akhir Kes</span>
-                            <div class="text-2xl font-black text-amber-500"><span id="end-score">0</span>/100</div>
-                            <div class="mt-1 text-[11px] bg-slate-900 px-2 py-1 rounded border border-slate-800">
-                                Pangkat Akhir: <span id="end-evaluation" class="font-bold text-yellow-400">-</span>
-                            </div>
-                            <div class="mt-3 pt-3 border-t border-slate-800 space-y-1">
-                                <button onclick="mintaPengesahanPadam()" class="w-full py-1 bg-red-600/10 text-red-400 rounded text-[10px] font-bold border border-red-500/20">🗑️ Kosongkan Kedudukan Kelas</button>
-                                <button onclick="muatTurunRekodCSV()" class="w-full py-1.5 bg-amber-500 text-slate-950 font-bold rounded text-[10px] flex items-center justify-center gap-1">📥 Eksport Rekod Kelas (.CSV)</button>
-                            </div>
-                        </div>
-
-                        <div class="bg-slate-950 border border-slate-800 p-3 rounded-xl flex flex-col">
-                            <span class="text-[10px] text-slate-400 font-bold uppercase block mb-1 border-b border-slate-800 pb-1">📊 Kedudukan Detektif Kelas</span>
-                            <div id="leaderboard-list" class="overflow-y-auto max-h-[120px] space-y-1 text-[11px]"></div>
-                        </div>
-                    </div>
-
-                    <div class="flex gap-2">
-                        <button onclick="mainSemula()" class="flex-1 py-2 bg-slate-800 text-slate-200 font-bold rounded-lg text-xs uppercase tracking-wider">🔄 Main Semula</button>
-                        <button onclick="window.print()" class="flex-1 py-2 bg-amber-500 text-slate-950 font-bold rounded-lg text-xs uppercase tracking-wider">🖨️ Cetak Laporan</button>
-                    </div>
-                </div>
-
-                <div class="w-full bg-slate-950/90 border border-slate-800 p-3 rounded-xl text-left">
-                    <span class="text-[10px] font-bold uppercase tracking-widest block text-slate-400 mb-2 font-mono">🎒 INVENTORI PERALATAN DETEKTIF</span>
-                    <div class="grid grid-cols-5 gap-1.5 text-center">
-                        <button onclick="paparPeneranganItem('🔦 Lampu Suluh', 'Digunakan untuk menyuluh petunjuk tersembunyi di kawasan gelap bilik siasatan.')" class="bg-slate-900 hover:bg-slate-800 border border-slate-800 p-2 rounded-lg text-base" title="Lampu Suluh">🔦</button>
-                        <button onclick="paparPeneranganItem('🧤 Sarung Tangan', 'Penting untuk memegang bukti dompet supaya cap jari tidak terjejas.')" class="bg-slate-900 hover:bg-slate-800 border border-slate-800 p-2 rounded-lg text-base" title="Sarung Tangan">🧤</button>
-                        <button onclick="paparPeneranganItem('📷 Kamera Siasatan', 'Mengambil gambar petunjuk untuk dilekatkan pada Papan Bukti Benang Merah.')" class="bg-slate-900 hover:bg-slate-800 border border-slate-800 p-2 rounded-lg text-base" title="Kamera">📷</button>
-                        <button onclick="paparPeneranganItem('📝 Buku Nota Kes', 'Mencatat maklumat MyKad pemilik, jumlah wang RM60, serta lokasi kes.')" class="bg-slate-900 hover:bg-slate-800 border border-slate-800 p-2 rounded-lg text-base" title="Buku Nota">📝</button>
-                        <button onclick="paparPeneranganItem('💼 Dompet Kes', 'Bukti utama mengandungi MyKad (Muhammad Harun bin Ismail, 6 Ibnu Sina), Wang RM60, Kad ATM, Nota Kecil.')" class="bg-slate-900 hover:bg-slate-800 border border-slate-800 p-2 rounded-lg text-base" title="Dompet">💼</button>
-                    </div>
-                    <div id="inventory-desc" class="mt-2 text-[10px] text-amber-400 bg-slate-900/60 p-1.5 rounded border border-slate-800 hidden italic"></div>
-                </div>
-
+        <div id="box-ios-fallback" class="fixed inset-0 bg-black/95 z-50 flex items-center justify-center p-4 hidden backdrop-blur-md">
+            <div class="bg-stone-900 border-2 border-amber-600 p-5 rounded-none max-w-lg w-full text-center shadow-2xl relative font-mono text-xs">
+                <div class="text-3xl mb-2">📋</div>
+                <h3 class="text-base font-bold text-amber-500 mb-1 uppercase tracking-wider typewriter-font">Salin Data Log Kelas (iOS Safari)</h3>
+                <p class="text-stone-400 text-[11px] mb-3 leading-relaxed">Sistem mengesan sekatan keselamatan muat turun fail tempatan. Sila pilih, salin keseluruhan kandungan di bawah dan tampalkan terus ke dalam aplikasi helaian Microsoft Excel atau Notepad komputer.</p>
+                <textarea id="ios-csv-text" readonly class="w-full h-36 bg-black border border-stone-800 p-2 text-stone-300 font-mono text-[10px] mb-3" onclick="this.select();"></textarea>
+                <button onclick="tutupIosFallback(); tapFX('click');" class="w-full py-2 bg-amber-600 hover:bg-amber-700 text-stone-950 font-bold uppercase text-[10px] tracking-widest typewriter-font">Tutup & Selesai</button>
             </div>
-
-            <div class="w-full papan-bukti p-4 rounded-2xl text-left shadow-2xl border-stone-900">
-                <span class="text-[11px] font-black uppercase text-amber-400 tracking-wider font-mono block mb-2 text-center border-b border-amber-500/20 pb-1">📌 PAPAN BUKTI UTAMA SIASATAN</span>
-                <p class="text-[10px] text-stone-400 italic mb-3 text-center">Selesaikan kes bukti di sebelah untuk menyambung rantaian kes ini.</p>
-                
-                <div id="papan-bukti-container" class="space-y-2 font-mono text-[11px]">
-                    <div id="bukti-item-1" class="bg-stone-900/90 p-2 rounded border border-stone-800 text-stone-500 flex items-center justify-between">
-                        <span>🪧 Bukti 1: Maksud Amanah</span> <span id="bukti-status-1">🔒 Terkunci</span>
-                    </div>
-                    <div id="bukti-item-2" class="bg-stone-900/90 p-2 rounded border border-stone-800 text-stone-500 flex items-center justify-between">
-                        <span>🪧 Bukti 2: Dalil Integriti</span> <span id="bukti-status-2">🔒 Terkunci</span>
-                    </div>
-                    <div id="bukti-item-3" class="bg-stone-900/90 p-2 rounded border border-stone-800 text-stone-500 flex items-center justify-between">
-                        <span>🪧 Bukti 3: Tindakan Jujur</span> <span id="bukti-status-3">🔒 Terkunci</span>
-                    </div>
-                    <div id="bukti-item-4" class="bg-stone-900/90 p-2 rounded border border-stone-800 text-stone-500 flex items-center justify-between">
-                        <span>🪧 Bukti 4: Kepentingan Ciri</span> <span id="bukti-status-4">🔒 Terkunci</span>
-                    </div>
-                    <div id="bukti-item-5" class="bg-stone-900/90 p-2 rounded border border-stone-800 text-stone-500 flex items-center justify-between">
-                        <span>🚨 Kes Akhir: Pengecaman Pemilik</span> <span id="bukti-status-5">🔒 Terkunci</span>
-                    </div>
-                </div>
-
-                <div id="papan-lengkap-msg" class="mt-4 bg-red-950/50 p-2 rounded text-center text-xs text-red-400 border border-red-900/40 font-bold hidden uppercase animate-pulse">
-                    ⚠️ Rantaian Benang Merah Lengkap!
-                </div>
-            </div>
-
         </div>
 
     </main>
 
-    <footer class="w-full text-center py-2 text-slate-600 text-[10px] border-t border-slate-950 z-10 relative">
-        <p>&copy; 2026 Misi Detektif Amanah. Suasana Pejabat Detektif Sekolah Rendah Nilai Murni.</p>
+    <footer class="w-full text-center py-2 text-stone-600 font-mono text-[9px] border-t border-stone-900 z-10 relative">
+        <p>&copy; 2026 Misi Detektif Amanah - Edisi Bilik Siasatan Khas Nilai Murni Pendidikan Islam KPM.</p>
     </footer>
 
     <script>
+        const defaultApiUrl = "https://script.google.com/macros/s/AKfycbxlzABzjJW9To9GCE7E5bMSgz5iQ27X8aIgmTDtl3ulfkKqp8whaBAYv7M9e9GiUjmf1A/exec";
+
         const senaraiSoalan = [
             { 
-                time: "9.30 Pagi",
-                loc: "Koridor Blok C",
-                desc: "Sebuah dompet kulit berwarna coklat dijumpai jatuh terdampar di atas lantai simen. Terdapat beberapa keping kad terkeluar. Sebelum memeriksa soalan bukti di dalam, anda perlu memahami terlebih dahulu asas utama integriti.",
-                q: "Apakah maksud amanah yang menjadi asas utama seorang detektif?", 
+                sit: "ZON KES 1: Siasatan Bermula. Anda berada di dalam bilik siasatan yang gelap. Ahli kumpulan anda sedang berbincang tentang maksud perkataan 'Amanah' sebelum membuka zip dompet yang dijumpai.", 
+                q: "Detektif, jawab soalan saya sekarang: Apakah maksud sebenar sifat Amanah dalam Islam?", 
                 opt: [
-                    "Menggunakan barang kepunyaan rakan sekolah secara sembunyi.", 
-                    "Melaksanakan tanggungjawab dengan jujur serta menjaga hak orang lain.", 
-                    "Menyimpan barang hilang untuk dijadikan hak peribadi.",
-                    "Mengambil barangan berharga tanpa cuba mencari pemilik asalnya."
+                    "Menggunakan barang orang lain mengikut suka hati sendiri.", 
+                    "Menjalankan tanggungjawab dengan jujur dan menjaga hak orang lain tanpa khianat.", 
+                    "Menyimpan barang orang lain untuk dijadikan koleksi sendiri.",
+                    "Mengambil barang di tempat awam sekiranya tiada orang yang melihat."
                 ], 
-                ans: 1, kod: "A", clue: "\"Pemilik dompet ini memegang ajaran al-Quran tentang sifat jujur.\""
+                ans: 1, kod: "A",
+                petunjukKod: "\"Huruf pertama bagi perkataan Amanah.\"", tipe: "normal"
             },
             { 
-                time: "10.05 Pagi",
-                loc: "Bilik Fail Sekolah",
-                desc: "Anda menjumpai satu keratan nota dalam saku dompet yang menyatakan ayat panduan al-Quran mengenai amanah, namun nombor rujukan surah kelihatan kabur terjejas air hujan.",
-                q: "Manakah antara berikut dalil tuntutan amanah yang dipelajari dalam komik Ali?", 
+                sit: "ZON KES 2: Mencari Bukti. Di dalam dompet itu, ada sepotong ayat al-Quran tentang kewajipan bersifat amanah. Namun, tulisan nama surah telah pudar terkena air hujan.", 
+                q: "Lapor kepada saya segera! Surah al-Quran yang manakah menyuruh kita bersifat amanah?", 
                 opt: [
                     "Surah Al-Fatihah ayat 7", 
                     "Surah Al-Ikhlas ayat 1", 
                     "Surah An-Nisa' ayat 58",
                     "Surah Al-Kafirun ayat 6"
                 ], 
-                ans: 2, kod: "M", clue: "\"Ramai saksi mempercayai dia kerana integritinya tinggi.\""
+                ans: 2, kod: "M",
+                petunjukKod: "\"Huruf awal bagi perkataan Manusia.\"", tipe: "normal"
             },
             { 
-                time: "10.45 Pagi",
-                loc: "Kantin Sekolah",
-                desc: "Keadaan sekeliling sangat terik dan dahaga. Seorang rakan siasatan mencadangkan untuk mengambil dahulu RM10 daripada dompet kes untuk membeli minuman sejuk, berjanji menggantikannya esok.",
-                q: "Apakah tindakan penyelesaian yang paling amanah dan tepat dalam kes ini?", 
+                sit: "ZON KES 3: Ujian Jujur. Kawan detektif anda memberikan idea untuk pinjam RM10 daripada dompet itu untuk beli makanan kecemasan, dan berjanji akan ganti semula esok pagi.", 
+                q: "Fikir betul-betul, Detektif! Jika situasi ini berlaku, apakah tindakan yang paling betul?", 
                 opt: [
-                    "Mengambil jumlah kecil sahaja demi keperluan darurat.", 
-                    "Meminjam wang tersebut dahulu dan menggantikannya pada keesokan hari.", 
-                    "Menjaga dompet dengan utuh tanpa menyentuh atau mengambil sebarang isi di dalamnya.",
-                    "Membahagikan wang secara sama rata kepada semua detektif bertugas."
+                    "Boleh pinjam asalkan kita tulis dalam buku nota.", 
+                    "Gunakan duit itu dahulu dan ganti semula sebelum pemiliknya tahu.", 
+                    "Jaga dan simpan dompet itu dengan baik tanpa menyentuh atau mengambil apa-apa barang di dalamnya.",
+                    "Bahagikan duit yang ada sama rata sebagai upah menjaga dompet."
                 ], 
-                ans: 2, kod: "A", clue: "\"Sifat terpuji ini sentiasa membawa kejayaan dunia akhirat.\""
+                ans: 2, kod: "A",
+                petunjukKod: "\"Huruf pertama bagi perkataan Adil.\"", tipe: "normal"
             },
             { 
-                time: "11.15 Pagi",
-                loc: "Bilik Guru Besar",
-                desc: "Anda perlu merangka hujah siasatan tentang kesan amalan sebelum menyerahkan penemuan bukti kes dompet ini kepada pihak pengurusan sekolah.",
-                q: "Antara berikut, manakah kepentingan utama memiliki sifat amanah dalam kehidupan?", 
+                sit: "ZON KES 4: Kesan Sifat Baik. Untuk mengecilkan senarai nama pemilik dompet, anda perlu tahu apa kesan baik jika semua murid di sekolah mengamalkan sifat amanah.", 
+                q: "Buka mata anda, Detektif! Apakah kepentingan utama jika kita menjaga sifat amanah ini?", 
                 opt: [
-                    "Menyebabkan semua orang sekeliling menjauhkan diri.", 
-                    "Menjadikan diri seseorang itu dihormati dan sentiasa dipercayai.", 
-                    "Menimbulkan perasaan prasangka buruk dan perselisihan faham.",
-                    "Mendatangkan kerugian besar dalam urusan harian."
+                    "Membuatkan orang lain menjauhkan diri and tidak mahu berkawan dengan kita.", 
+                    "Membentuk diri menjadi orang yang baik dan sentiasa dipercayai oleh orang lain.", 
+                    "Menimbulkan rasa syak waswas dan pergaduhan antara rakan-rakan.",
+                    "Menebabkan kerugian kepada diri sendiri kerana terlalu jujur."
                 ], 
-                ans: 1, kod: "N", clue: "\"Misi Akhir Sedia: Tiga Suspek Mengaku Pemilik!\""
+                ans: 1, kod: "N",
+                petunjukKod: "\"Huruf terakhir bagi perkataan Iman.\"", tipe: "normal"
             },
             { 
-                time: "12.00 Tengah Hari",
-                loc: "Bilik Mesyuarat Utama (BOSS LEVEL - KES TERAKHIR)",
-                desc: "🚨 KES TERAKHIR! Tiga orang murid (Individu A, Individu B, dan Individu C) tiba-tiba datang mengaku sebagai pemilik dompet. Berdasarkan padanan maklumat nota dan simpanan MyKad (Nama: Muhammad Harun bin Ismail, No: 140612-08-0123, Kelas: 6 Ibnu Sina, Wang: RM60), siapa pemilik sebenar?", 
-                q: "Sila lakukan pengecaman muktamad. Siapakah pemilik sebenar dompet tersebut?", 
+                sit: "ZON KES 5: Mencari Pemilik Sebenar. Tiga orang murid datang ke kaunter anda untuk menuntut dompet ini. Anda perlu menyemak kad pengenalan (MyKad) di dalam dompet untuk tahu siapa pemiliknya.", 
+                q: "Masa untuk selesaikan kes! Detektif, lihat anak panah di bawah ini, klik beg kes 'Eksibit Dompet' untuk semak kad pengenalan pemilik sebenar! 👇👇👇", 
                 opt: [
-                    "Individu A (Mengaku memiliki dompet hitam mengandungi RM100)", 
-                    "Individu B (Mengaku kehilangan dompet coklat berisi RM10 tanpa MyKad)", 
-                    "Individu C (Muhammad Harun bin Ismail, Kelas 6 Ibnu Sina)",
-                    "Membahagikan dompet kepada ketiga-tiga individu tersebut"
+                    "Murid A (Nazirah - Kelas 6 Al-Farabi)", 
+                    "Murid B (Ilman - Kelas 6 Ibn Khaldun)", 
+                    "Murid C (Annisa - Kelas 6 Ibnu Sina)",
+                    "Semua di atas boleh ambil dan bahagi sama rata"
                 ], 
-                ans: 2, kod: "AH", clue: "Tahniah! Kes berjaya diselesaikan sepenuhnya!"
+                ans: 2, kod: "A",
+                petunjukKod: "\"Huruf awal bagi perkataan Asal.\"", tipe: "normal"
+            },
+            {
+                sit: "ZON KES 6: Fail Kes Terakhir (Menilai & Justifikasi). Rekod kes lama dibuka semula. Amir ternampak rakannya meniru semasa peperiksaan. Rakannya meminta Amir supaya tidak memberitahu guru.",
+                q: "Sebagai Detektif bertaraf tinggi, apakah tindakan yang sepatutnya dipilih dan berikan alasannya?",
+                opt: [
+                    "Diam sahaja.",
+                    "Beritahu guru secara berhemah.",
+                    "Meniru bersama.",
+                    "Sebarkan kepada semua rakan."
+                ],
+                ans: 1, kod: "H",
+                petunjukKod: "Siasatan Selesai! Semua huruf rahsia telah dikumpulkan.", tipe: "justifikasi"
+            },
+            {
+                sit: "ZON KES 7: Detektif Amanah Berjaya! (Rancangan Pelan Tindakan). Anda kini ditauliahkan sebagai Detektif Amanah yang sah oleh Jabatan Integriti.",
+                q: "Arahan: Sila rumuskan dan lengkapkan borang pelan tindakan amanah peribadi anda di bawah.",
+                opt: [],
+                ans: -1, kod: "AMANAH",
+                petunjukKod: "Evidens amalan sedia untuk dihantar.", tipe: "amalan"
             }
         ];
 
-        let indeksSekarang = 0;
-        let nyawa = 3;
-        let skor = 0;
-        let namaPemain = "";
-        let pangkatSiasatan = "Rekrut Detektif";
+        let indeksSekarang = 0; let nyawa = 3; let skor = 0;
+        let namaPemain = ""; let kodKutipan = []; let susunanPuzzlePemain = [];
+        let modalActionOnConfirm = null; let inMemoryStorage = {};
+        let bintangTerpilih = 0; 
+        
+        // Pembolehubah Evidens Baharu (TP5 & TP6)
+        let dataJustifikasi = "";
+        let dataAmalan = ["", "", ""];
 
-        // URL GOOGLE SCRIPT ANDA SUDAH DIMASUKKAN DI SINI DENGAN SELAMAT
-        const GOOGLE_SHEET_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbx3KT1flszBTrSmwL7QWwPEGv4EdqYReOqh5EzJ9YMSoLd-X_138IMPjE0x-aMuwfm6Nw/exec";
-
-        function gerakLampuSuluh(e) {
-            const flashlight = document.getElementById('flashlight');
-            flashlight.style.left = (e.clientX - 75) + 'px';
-            flashlight.style.top = (e.clientY - 75) + 'px';
+        function janjiHujan() {
+            const rainBox = document.getElementById('rain-box');
+            rainBox.innerHTML = "";
+            const count = 40;
+            for (let i = 0; i < count; i++) {
+                const drop = document.createElement('div');
+                drop.className = 'rain-drop';
+                drop.style.left = Math.random() * 100 + '%';
+                drop.style.top = Math.random() * -100 + 'px';
+                drop.style.animationDuration = 0.5 + Math.random() * 0.5 + 's';
+                drop.style.animationDelay = Math.random() * 2 + 's';
+                rainBox.appendChild(drop);
+            }
         }
 
-        function paparPeneranganItem(name, desc) {
-            AudioFX.play('misteri');
-            const el = document.getElementById('inventory-desc');
-            el.innerText = `${name}: ${desc}`;
-            el.classList.remove('hidden');
+        function dapatkanSkorSelamat() {
+            try {
+                if (typeof window !== 'undefined' && 'localStorage' in window && window.localStorage !== null) {
+                    const data = window.localStorage.getItem('senaraiSkorAmanah');
+                    return data ? JSON.parse(data) : [];
+                }
+            } catch (e) {}
+            return inMemoryStorage['senaraiSkorAmanah'] || [];
         }
 
-        function tampilkanModal(tajuk, pesan, ikon = "⚠️") {
+        function setSkorSelamat(senarai) {
+            try {
+                if (typeof window !== 'undefined' && 'localStorage' in window && window.localStorage !== null) {
+                    window.localStorage.setItem('senaraiSkorAmanah', JSON.stringify(senarai));
+                    return;
+                }
+            } catch (e) {}
+            inMemoryStorage['senaraiSkorAmanah'] = senarai;
+        }
+
+        function tampilkanModal(tajuk, pesan, ikon = "⚠️", tunjukBatal = false, tindakanSahkan = null) {
             document.getElementById('modal-icon').innerText = ikon;
             document.getElementById('modal-title').innerText = tajuk;
             document.getElementById('modal-msg').innerText = pesan;
+            const btnBatal = document.getElementById('modal-btn-secondary');
+            if (tunjukBatal) { btnBatal.classList.remove('hidden'); modalActionOnConfirm = tindakanSahkan; }
+            else { btnBatal.classList.add('hidden'); modalActionOnConfirm = null; }
             document.getElementById('custom-modal').classList.remove('hidden');
         }
 
-        function tutupModal() {
-            document.getElementById('custom-modal').classList.add('hidden');
-        }
+        function tutupModal() { document.getElementById('custom-modal').classList.add('hidden'); }
 
-        function kemasKiniPangkat() {
-            if (skor >= 100) pangkatSiasatan = "🏅 Master Integriti";
-            else if (skor >= 80) pangkatSiasatan = "🕵️‍♂️ Detektif Amanah";
-            else if (skor >= 40) pangkatSiasatan = "🕵️ Detektif Junior";
-            else pangkatSiasatan = "🔍 Rekrut Detektif";
-            
-            document.getElementById('rank-badge-live').innerText = pangkatSiasatan;
-        }
+        document.getElementById('modal-btn-primary').onclick = function() {
+            tapFX('click');
+            if (modalActionOnConfirm) modalActionOnConfirm();
+            tutupModal();
+        };
+
+        function bukaDompet() { document.getElementById('wallet-modal').classList.remove('hidden'); }
+        function tutupDompet() { document.getElementById('wallet-modal').classList.add('hidden'); }
 
         function mulaGame() {
+            tapFX('click');
             namaPemain = document.getElementById('input-name').value.trim();
             if (!namaPemain) {
-                tampilkanModal("Amaran Pejabat Detektif", "Sila masukkan nama anda untuk menerima Fail Kes rasmi!", "❌");
+                tampilkanModal("Gagal Mengesahkan", "Sila daftarkan nama penuh detektif di dalam sistem sebelum memulakan tugasan siasatan agung!", "🕵️‍♂️");
                 return;
             }
-            document.getElementById('flashlight').classList.remove('hidden');
             document.getElementById('box-login').classList.add('hidden');
-            
-            indeksSekarang = 0; nyawa = 3; skor = 0;
+            document.getElementById('box-game').classList.remove('hidden');
+            indeksSekarang = 0; nyawa = 3; skor = 0; kodKutipan = []; bintangTerpilih = 0;
+            dataJustifikasi = ""; dataAmalan = ["", "", ""];
+            kemasKiniStatusVisual();
+            paparSoalan();
+            tampilkanModal("Log Siasatan Diaktifkan", `Detektif ${namaPemain}, anda kini memegang akses kes. Selesaikan semua 7 zon kes utama termasuk zon penilaian berimpak tinggi.`, "📂");
+        }
+
+        function kemasKiniStatusVisual() {
             document.getElementById('game-lives').innerText = nyawa;
             document.getElementById('game-score').innerText = skor;
-            
-            paparFailBukti();
         }
 
-        function paparFailBukti() {
-            document.getElementById('box-game').classList.add('hidden');
-            document.getElementById('box-code-reveal').classList.add('hidden');
-            
-            const panelFail = document.getElementById('box-evidence-file');
-            panelFail.classList.remove('hidden');
-            
-            const data = senaraiSoalan[indeksSekarang];
-            document.getElementById('evidence-folder-title').innerText = indeksSekarang === 4 ? "🚨 KES TERAKHIR (BOSS LEVEL)" : `📂 FAIL KES #0${indeksSekarang + 1}`;
-            document.getElementById('ev-time').innerText = data.time;
-            document.getElementById('ev-location').innerText = data.loc;
-            document.getElementById('ev-description').innerText = data.desc;
-            
-            AudioFX.play('misteri');
-        }
-
-        function periksaBuktiSoalan() {
-            AudioFX.play('tick');
-            document.getElementById('box-evidence-file').classList.add('hidden');
-            
-            const boxGame = document.getElementById('box-game');
-            boxGame.classList.remove('hidden');
-            boxGame.classList.add('anim-zoom');
-            setTimeout(() => boxGame.classList.remove('anim-zoom'), 400);
-
+        function paparSoalan() {
             document.getElementById('btn-next').classList.add('hidden');
-            const feedback = document.getElementById('game-feedback');
-            feedback.innerText = ""; feedback.className = "text-center font-bold text-xs min-h-[40px] flex items-center justify-center rounded-xl transition-all mb-4";
-
-            const data = senaraiSoalan[indeksSekarang];
-            document.getElementById('game-level').innerText = indeksSekarang === 4 ? "Boss Level" : `Tahap ${indeksSekarang + 1}`;
-            document.getElementById('progress-bar').style.width = ((indeksSekarang + 1) / senaraiSoalan.length * 100) + "%";
+            document.getElementById('justification-container').classList.add('hidden');
+            document.getElementById('action-plan-container').classList.add('hidden');
+            
+            const maklumBalas = document.getElementById('game-feedback');
+            maklumBalas.innerText = "";
+            maklumBalas.className = "text-center font-bold text-xs min-h-[40px] flex items-center justify-center px-4 transition-all duration-200 font-mono";
+            
+            let data = senaraiSoalan[indeksSekarang];
+            document.getElementById('game-level').innerText = "Tahap " + (indeksSekarang + 1);
+            document.getElementById('situation-title').innerText = `FAIL SIASATAN ZON KES ${indeksSekarang + 1}:`;
+            
+            const peratusanProgres = ((indeksSekarang + 1) / senaraiSoalan.length) * 100;
+            document.getElementById('progress-bar').style.width = peratusanProgres + "%";
+            document.getElementById('game-situation').innerText = data.sit;
             document.getElementById('game-question').innerText = data.q;
-
-            const container = document.getElementById('options-container');
-            container.innerHTML = "";
-
-            data.opt.forEach((optText, idx) => {
-                let btn = document.createElement('button');
-                btn.className = "opt-btn w-full text-left bg-slate-950 hover:bg-slate-900 text-slate-300 border border-slate-800 p-2.5 rounded-xl transition flex items-start gap-2 text-xs";
-                const char = idx === 0 ? "A" : idx === 1 ? "B" : idx === 2 ? "C" : "D";
-                btn.innerHTML = `<span class="bg-slate-900 text-yellow-500 font-bold px-1.5 py-0.5 rounded border border-slate-700 text-[10px] mt-0.5">${char}</span><span class="flex-1">${optText}</span>`;
-                btn.onclick = () => semakJawapan(idx, btn);
-                container.appendChild(btn);
-            });
-        }
-
-        function semakJawapan(pilihan, btn) {
-            const data = senaraiSoalan[indeksSekarang];
-            const semuaBtn = document.querySelectorAll('.opt-btn');
-            semuaBtn.forEach(b => b.disabled = true);
-
-            const feedback = document.getElementById('game-feedback');
-
-            if (pilihan === data.ans) {
-                AudioFX.play('menang');
-                skor += 20;
-                btn.classList.add('bg-emerald-950/40', 'border-emerald-500', 'text-emerald-400');
-                feedback.innerText = "✔️ KEPUTUSAN TEPAT! Anda mengekalkan integriti dalam siasatan.";
-                feedback.classList.add('bg-emerald-500/10', 'text-emerald-400', 'border', 'border-emerald-500/20');
-                
-                const itemBukti = document.getElementById(`bukti-item-${indeksSekarang + 1}`);
-                itemBukti.className = "bg-emerald-950/40 p-2 rounded border border-emerald-500/30 text-emerald-400 flex items-center justify-between benang-merah";
-                document.getElementById(`bukti-status-${indeksSekarang + 1}`).innerText = "✅ Selesai";
-            } else {
-                AudioFX.play('wrong');
-                nyawa -= 1;
-                btn.classList.add('bg-red-950/40', 'border-red-500', 'text-red-400');
-                feedback.innerText = "🚨 SALAH! Keputusan ini melanggar nilai amanah detektif.";
-                feedback.classList.add('bg-red-500/10', 'text-red-400', 'border', 'border-red-500/20');
-                semuaBtn[data.ans].classList.add('bg-emerald-950/30', 'border-emerald-600', 'text-emerald-400');
-                
-                const itemBukti = document.getElementById(`bukti-item-${indeksSekarang + 1}`);
-                itemBukti.className = "bg-red-950/40 p-2 rounded border border-red-500/30 text-red-400 flex items-center justify-between";
-                document.getElementById(`bukti-status-${indeksSekarang + 1}`).innerText = "❌ Gagal";
+            
+            let bekasOpt = document.getElementById('options-container');
+            bekasOpt.innerHTML = "";
+            
+            if (data.tipe === "normal" || data.tipe === "justifikasi") {
+                data.opt.forEach((pilihan, indeks) => {
+                    let btn = document.createElement('button');
+                    btn.className = "opt-btn w-full text-left bg-black hover:bg-stone-800 text-stone-300 border border-stone-800 p-3 rounded-none transition-all duration-150 focus:outline-none flex items-start gap-3 text-xs font-mono";
+                    const abjad = indeks === 0 ? "A" : indeks === 1 ? "B" : indeks === 2 ? "C" : "D";
+                    btn.innerHTML = `<span class="bg-stone-900 text-amber-500 font-bold px-1.5 py-0.5 border border-stone-700 text-[10px] mt-0.5">${abjad}</span> <span class="flex-1">${pilihan}</span>`;
+                    btn.onclick = () => { tapFX('click'); semakJawapan(indeks, btn); };
+                    bekasOpt.appendChild(btn);
+                });
+            } else if (data.tipe === "amalan") {
+                document.getElementById('action-plan-container').classList.remove('hidden');
+                document.getElementById('btn-next').classList.remove('hidden');
+                document.getElementById('btn-next').innerHTML = `<span>Simpan & Proses Kod Enkripsi 🏆</span>`;
+                document.getElementById('btn-next').className = "w-full mt-2 py-3 bg-amber-600 hover:bg-amber-700 text-stone-950 font-black rounded-none transition duration-200 flex items-center justify-center text-xs uppercase tracking-wider typewriter-font";
             }
 
-            document.getElementById('game-lives').innerText = nyawa;
-            document.getElementById('game-score').innerText = skor;
-            kemasKiniPangkat();
+            const butangDompet = document.querySelector("button[onclick*='bukaDompet']");
+            if (butangDompet) {
+                if (indeksSekarang === 4) {
+                    butangDompet.classList.add("animate-bounce", "border-yellow-500", "bg-amber-500/20");
+                } else {
+                    butangDompet.classList.remove("animate-bounce", "border-yellow-500", "bg-amber-500/20");
+                }
+            }
+        }
 
-            const nextBtn = document.getElementById('btn-next');
-            nextBtn.classList.remove('hidden');
-            if (nyawa <= 0) {
-                nextBtn.innerHTML = "<span>Tamatkan Kes (Misi Gagal) 💀</span>";
-            } else if (indeksSekarang >= senaraiSoalan.length - 1) {
-                nextBtn.innerHTML = "<span>Buka Fail Keputusan Akhir 🏆</span>";
+        function semakJawapan(pilihanMurid, butangDitekan) {
+            let data = senaraiSoalan[indeksSekarang];
+            let semuaButang = document.querySelectorAll('.opt-btn');
+            semuaButang.forEach(b => { b.disabled = true; });
+            const maklumBalas = document.getElementById('game-feedback');
+            
+            if (pilihanMurid === data.ans) {
+                tapFX('correct');
+                skor += 20;
+                butangDitekan.className = "opt-btn w-full text-left bg-emerald-950/40 text-emerald-400 border border-emerald-500 p-3 rounded-none text-xs font-mono";
+                maklumBalas.innerText = "✓ JAWAPAN BETUL: Pilihan anda tepat dengan sifat amanah!";
+                maklumBalas.classList.add('text-emerald-400', 'bg-emerald-950/20', 'border', 'border-emerald-900');
+                kodKutipan.push(data.kod);
+                
+                if (data.tipe === "justifikasi") {
+                    document.getElementById('justification-container').classList.remove('hidden');
+                }
+                document.getElementById('btn-next').classList.remove('hidden');
             } else {
-                nextBtn.innerHTML = "<span>Ambil Kod & Nyahkunci Kes Seterusnya ➡️</span>";
+                tapFX('wrong');
+                nyawa -= 1;
+                butangDitekan.className = "opt-btn w-full text-left bg-rose-950/40 text-rose-400 border border-rose-500 p-3 rounded-none text-xs font-mono";
+                maklumBalas.innerText = "𐄂 JAWAPAN SALAH: Tindakan ini melanggar sifat amanah.";
+                maklumBalas.classList.add('text-rose-400', 'bg-rose-950/20', 'border', 'border-rose-900');
+                semuaButang[data.ans].className = "opt-btn w-full text-left bg-emerald-950/40 text-emerald-400 border border-emerald-500 p-3 rounded-none text-xs font-mono";
+                
+                if (data.tipe === "justifikasi") {
+                    document.getElementById('justification-container').classList.remove('hidden');
+                }
+                document.getElementById('btn-next').classList.remove('hidden');
+            }
+            
+            kemasKiniStatusVisual();
+            const btnNext = document.getElementById('btn-next');
+            if (nyawa <= 0) {
+                btnNext.innerHTML = `<span>Tamatkan Siasatan (Misi Gagal) 💀</span>`;
+                btnNext.className = "w-full mt-2 py-3 bg-rose-700 hover:bg-rose-800 text-white font-bold rounded-none transition duration-200 flex items-center justify-center text-xs uppercase tracking-wider typewriter-font";
             }
         }
 
         function bukaDecoderGate() {
-            if (nyawa <= 0) {
-                simpanSkorPemain(null);
-                tamatGame(false);
+            if (nyawa <= 0) { simpanSkorPemain(0); tamatGame(false); return; }
+            
+            let data = senaraiSoalan[indeksSekarang];
+            
+            // Validasi Input Justifikasi (Zon 6)
+            if (data.tipe === "justifikasi") {
+                const jInput = document.getElementById('input-justification').value.trim();
+                if (!jInput) {
+                    tampilkanModal("Alasan Diperlukan", "Sila masukkan justifikasi/alasan mengapa anda memilih jawapan tersebut untuk melayakkan penilaian tahap TP5!", "✍️");
+                    return;
+                }
+                dataJustifikasi = jInput;
+            }
+
+            // Validasi Input Amalan (Zon 7)
+            if (data.tipe === "amalan") {
+                const p1 = document.getElementById('input-plan-1').value.trim();
+                const p2 = document.getElementById('input-plan-2').value.trim();
+                const p3 = document.getElementById('input-plan-3').value.trim();
+                
+                if (!p1 || !p2 || !p3) {
+                    tampilkanModal("Pelan Amalan Tidak Lengkap", "Sila isikan ketiga-tiga ruang amalan amanah sebagai bukti rancangan pelan tindakan (TP6) anda!", "📝");
+                    return;
+                }
+                dataAmalan = [p1, p2, p3];
+                skor += 20; // Tambah skor bonus penyelesaian pelan amalan (20 mata)
+                document.getElementById('box-game').classList.add('hidden');
+                bukaPuzzleAkhir();
                 return;
             }
+
             document.getElementById('box-game').classList.add('hidden');
-            
-            const data = senaraiSoalan[indeksSekarang];
             document.getElementById('box-code-reveal').classList.remove('hidden');
             document.getElementById('revealed-letter').innerText = data.kod;
-            document.getElementById('code-reveal-clue').innerText = data.clue;
-            
+            document.getElementById('code-reveal-clue').innerText = data.petunjukKod;
             document.getElementById('input-gate-code').value = "";
             document.getElementById('decoder-error').classList.add('hidden');
         }
 
         function sahkanKodGate() {
-            const input = document.getElementById('input-gate-code').value.trim().toUpperCase();
-            const betul = senaraiSoalan[indeksSekarang].kod.toUpperCase();
+            tapFX('click');
+            const inputKod = document.getElementById('input-gate-code').value.trim().toUpperCase();
+            const kodBetul = senaraiSoalan[indeksSekarang].kod.toUpperCase();
 
-            if (input === betul) {
-                AudioFX.play('tick');
+            if (inputKod === kodBetul) {
                 document.getElementById('box-code-reveal').classList.add('hidden');
                 if (indeksSekarang < senaraiSoalan.length - 1) {
                     indeksSekarang++;
-                    paparFailBukti();
+                    document.getElementById('box-game').classList.remove('hidden');
+                    paparSoalan();
                 } else {
-                    document.getElementById('papan-lengkap-msg').classList.remove('hidden');
-                    document.getElementById('box-reflection').classList.remove('hidden');
-                    document.getElementById('box-animation-victory').classList.remove('hidden');
+                    bukaPuzzleAkhir();
                 }
             } else {
-                AudioFX.play('wrong');
                 document.getElementById('decoder-error').classList.remove('hidden');
             }
         }
 
-        function hantarRefleksi(e) {
-            e.preventDefault();
-            
-            const loadingIndicator = document.getElementById('loading-sender');
-            const submitBtn = document.getElementById('btn-submit-reflection');
-            
-            loadingIndicator.classList.remove('hidden');
-            submitBtn.disabled = true;
-            submitBtn.innerText = "Sedang Menghantar...";
+        const susunanSiriKod = ["M", "A", "A", "N", "A", "H"];
+        
+        function bukaPuzzleAkhir() {
+            tapFX('mystery');
+            document.getElementById('box-code-puzzle').classList.remove('hidden');
+            susunanPuzzlePemain = [];
+            binaKolamHurufPuzzle();
+            kemasKiniPaparanSlotPuzzle();
+            document.getElementById('puzzle-error').classList.add('hidden');
+        }
 
-            const refData = {
-                q1: document.getElementById('ref-q1').value.trim(),
-                q2: document.getElementById('ref-q2').value.trim(),
-                q3: document.getElementById('ref-q3').value.trim(),
-                q4: document.getElementById('ref-q4').value.trim()
-            };
-
-            const payload = {
-                nama: namaPemain,
-                skor: skor,
-                pangkat: pangkatSiasatan,
-                tarikh: new Date().toLocaleString('ms-MY'),
-                ...refData
-            };
-
-            // Menghantar data ke Google Sheets menggunakan API Fetch
-            fetch(GOOGLE_SHEET_WEBAPP_URL, {
-                method: "POST",
-                mode: "no-cors",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload)
-            }).then(() => {
-                prosesSelesaiHantar(refData);
-            }).catch((error) => {
-                console.error("Ralat hantaran:", error);
-                prosesSelesaiHantar(refData); // Teruskan game walaupun server ralat supaya game tidak sangkut
+        function binaKolamHurufPuzzle() {
+            const pool = document.getElementById('puzzle-letter-pool');
+            pool.innerHTML = "";
+            susunanSiriKod.forEach((huruf, index) => {
+                let btn = document.createElement('button');
+                btn.className = "px-3 py-1.5 bg-stone-800 hover:bg-stone-700 text-amber-500 font-bold border border-stone-700 text-sm transition duration-150 cursor-pointer";
+                btn.innerText = huruf;
+                btn.id = `puzzle-pool-btn-${index}`;
+                btn.onclick = () => { tapFX('click'); tambahHurufKePuzzle(huruf, index); };
+                pool.appendChild(btn);
             });
         }
 
-        function prosesSelesaiHantar(refData) {
-            document.getElementById('loading-sender').classList.add('hidden');
-            const submitBtn = document.getElementById('btn-submit-reflection');
-            submitBtn.disabled = false;
-            submitBtn.innerText = "Hantar Penilaian & Kemukakan Laporan Fail Kes 📄";
+        function tambahHurufKePuzzle(huruf, index) {
+            if (susunanPuzzlePemain.length >= susunanSiriKod.length) return;
+            susunanPuzzlePemain.push({ huruf: huruf, poolIndex: index });
+            const btn = document.getElementById('puzzle-pool-btn-' + index);
+            if (btn) {
+                btn.disabled = true;
+                btn.className = "px-3 py-1.5 bg-stone-900 text-stone-700 border border-stone-950 text-sm opacity-30 cursor-not-allowed";
+            }
+            kemasKiniPaparanSlotPuzzle();
+        }
+
+        function padamSusunanPuzzle() {
+            susunanPuzzlePemain = [];
+            binaKolamHurufPuzzle();
+            kemasKiniPaparanSlotPuzzle();
+            document.getElementById('puzzle-error').classList.add('hidden');
+        }
+
+        function kemasKiniPaparanSlotPuzzle() {
+            const slots = document.getElementById('puzzle-slots');
+            slots.innerHTML = "";
+            if (susunanPuzzlePemain.length === 0) {
+                slots.innerHTML = `<span class="text-[10px] text-stone-600 italic">Pilih susunan blok...</span>`;
+                return;
+            }
+            susunanPuzzlePemain.forEach((item) => {
+                let span = document.createElement('span');
+                span.className = "px-2.5 py-1 bg-black border border-amber-600 font-bold text-amber-400 text-sm font-mono";
+                span.innerText = item.huruf;
+                slots.appendChild(span);
+            });
+        }
+
+        function sahkanPuzzleAkhir() {
+            tapFX('click');
+            const gabunganHuruf = susunanPuzzlePemain.map(item => item.huruf).join("").toUpperCase();
+            if (gabunganHuruf === "AMANAH") {
+                document.getElementById('box-code-puzzle').classList.add('hidden');
+                document.getElementById('box-reflection').classList.remove('hidden');
+            } else {
+                document.getElementById('puzzle-error').classList.remove('hidden');
+            }
+        }
+
+        function pilihBintangKefahaman(bilanganBintang) {
+            tapFX('click');
+            bintangTerpilih = bilanganBintang;
+            const teksDeskripsi = document.getElementById('star-desc');
             
-            simpanSkorPemain(refData);
+            for (let i = 1; i <= 5; i++) {
+                const elemenBintang = document.getElementById(`star-${i}`);
+                if (i <= bilanganBintang) {
+                    elemenBintang.className = "fas fa-star cursor-pointer text-yellow-500 transition";
+                } else {
+                    elemenBintang.className = "far fa-star cursor-pointer text-stone-600 transition";
+                }
+            }
+
+            if (bilanganBintang === 1) teksDeskripsi.innerText = "⭐ Sangat Kurang Faham";
+            else if (bilanganBintang === 2) teksDeskripsi.innerText = "⭐⭐ Kurang Faham";
+            else if (bilanganBintang === 3) teksDeskripsi.innerText = "⭐⭐⭐ Sederhana / Biasa";
+            else if (bilanganBintang === 4) teksDeskripsi.innerText = "⭐⭐⭐⭐ Faham & Jelas";
+            else if (bilanganBintang === 5) teksDeskripsi.innerText = "⭐⭐⭐⭐⭐ Sangat Faham & Hebat!";
+
+            const btnSubmit = document.getElementById('btn-submit-rating');
+            btnSubmit.disabled = false;
+            btnSubmit.className = "w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-stone-950 font-black uppercase tracking-wider text-xs typewriter-font shadow-lg cursor-pointer";
+        }
+
+        async function hantarPenilaianBintang() {
+            if (bintangTerpilih === 0) return;
+            tapFX('click');
+
+            await simpanSkorPemain(bintangTerpilih);
+            let savedApiUrl = defaultApiUrl;
+
+            if (savedApiUrl) {
+                const statusIndicator = document.getElementById('sheet-sending-status');
+                statusIndicator.classList.remove('hidden');
+                const payload = {
+                    nama: namaPemain, 
+                    skor: skor, 
+                    tarikh: new Date().toLocaleString('ms-MY'),
+                    ref1: `Skala: ${bintangTerpilih} Bintang`,
+                    ref2: `TP5 (Justifikasi): ${dataJustifikasi}`, 
+                    ref3: `TP6 (Amalan 1): ${dataAmalan[0]}`, 
+                    ref4: `TP6 (Amalan 2 & 3): ${dataAmalan[1]} | ${dataAmalan[2]}`
+                };
+                try {
+                    await fetch(savedApiUrl, {
+                        method: 'POST', mode: 'no-cors',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                } catch (error) {
+                    console.error("Ralat pemindahan pangkalan data:", error);
+                } finally {
+                    statusIndicator.classList.add('hidden');
+                }
+            }
             document.getElementById('box-reflection').classList.add('hidden');
             tamatGame(true);
         }
@@ -710,90 +982,189 @@
         function tamatGame(berjaya) {
             document.getElementById('box-game').classList.add('hidden');
             document.getElementById('box-code-reveal').classList.add('hidden');
+            document.getElementById('box-code-puzzle').classList.add('hidden');
             document.getElementById('box-end').classList.remove('hidden');
             document.getElementById('end-score').innerText = skor;
-            document.getElementById('end-evaluation').innerText = pangkatSiasatan;
-
+            
             const badge = document.getElementById('end-badge');
             const title = document.getElementById('end-title');
             const msg = document.getElementById('end-msg');
+            const evaluation = document.getElementById('end-evaluation');
+            const ratingDisplay = document.getElementById('end-rating-display');
+            const evidenceDisplay = document.getElementById('display-text-evidence');
+            
+            ratingDisplay.innerText = bintangTerpilih > 0 ? "⭐".repeat(bintangTerpilih) : "Tiada Penilaian";
 
             if (berjaya) {
-                badge.innerText = "🏅";
-                title.innerText = "🎉 MISI BERJAYA DISURAIKAN!";
-                msg.innerHTML = `Detektif <strong>${namaPemain.toUpperCase()}</strong> telah menyerahkan bukti sahih dompet kes Muhammad Harun bin Ismail. Sijil Integriti dan Pangkat <strong>${pangkatSiasatan}</strong> dikurniakan atas kejujuran luar biasa anda!`;
+                tapFX('win');
+                badge.innerText = "🏆";
+                title.innerText = "MISI SELESAI!";
+                title.className = "text-xl md:text-2xl font-bold mb-2 text-amber-500 uppercase tracking-wide";
+                msg.innerHTML = `Siasatan Ditutup Rasmi! Syabas Detektif ${namaPemain}. Anda telah berjaya menguji dan mempamerkan integriti yang kukuh sehingga ke peringkat aplikasi pelan amalan.`;
+                
+                if (skor >= 130) { evaluation.innerText = "Gred A: Detektif Amanah Terpuji (TP6)"; evaluation.className = "font-bold text-yellow-500"; }
+                else if (skor >= 100) { evaluation.innerText = "Gred B: Detektif Jujur Cemerlang"; evaluation.className = "font-bold text-emerald-500"; }
+                else { evaluation.innerText = "Gred C: Detektif Muda"; evaluation.className = "font-bold text-blue-500"; }
+
+                evidenceDisplay.innerHTML = `
+                    <p class="text-amber-400 font-bold uppercase">📝 EVIDENS JUSTIFIKASI (TP5):</p>
+                    <p class="italic text-stone-400 mb-2">"${dataJustifikasi}"</p>
+                    <p class="text-emerald-400 font-bold uppercase">📋 EVIDENS PELAN AMALAN (TP6):</p>
+                    <ul class="list-disc list-inside text-stone-400">
+                        <li>${dataAmalan[0]}</li>
+                        <li>${dataAmalan[1]}</li>
+                        <li>${dataAmalan[2]}</li>
+                    </ul>
+                `;
             } else {
                 badge.innerText = "💀";
-                title.innerText = "MISI GAGAL";
-                msg.innerHTML = `Maaf Detektif <strong>${namaPemain.toUpperCase()}</strong>, anda digantung tugas kerana kehabisan nyawa berpunca daripada keputusan bercanggah nilai amanah sekolah. Sila cuba lagi!`;
+                title.innerText = "FAIL DISITA / MISI GAGAL";
+                title.className = "text-xl md:text-2xl font-bold mb-2 text-rose-500 uppercase tracking-wide";
+                msg.innerHTML = `Misi Gagal! Anda dikeluarkan daripada tugasan ini kerana gagal membuat pilihan yang jujur dan amanah sehingga kehabisan nyawa.`;
+                evaluation.innerText = "Gred G: Siasatan Gagal";
+                evaluation.className = "font-bold text-rose-500";
+                evidenceDisplay.innerHTML = `<p class="text-rose-500 italic">Tiada evidens yang dapat dijana disebabkan kegagalan misi.</p>`;
             }
             paparLeaderboard();
         }
 
-        function simpanSkorPemain(refData) {
-            let senarai = JSON.parse(localStorage.getItem('senaraiSkorAmanah2026')) || [];
-            const rekod = {
-                nama: namaPemain, skor: skor, pangkat: pangkatSiasatan,
+        async function simpanSkorPemain(bintangVal = 0) {
+            const rekodBaru = {
+                nama: namaPemain || "Detektif Tanpa Nama", 
+                skor: skor,
                 tarikh: new Date().toLocaleString('ms-MY'),
-                ref: refData || {q1:'-', q2:'-', q3:'-', q4:'-'}
+                refleksi: { 
+                    q1: `Skala: ${bintangVal} Bintang`, 
+                    q2: dataJustifikasi || "-", 
+                    q3: dataAmalan.join(" | ") || "-" 
+                }
             };
-            senarai.push(rekod);
-            localStorage.setItem('senaraiSkorAmanah2026', JSON.stringify(senarai));
+
+            let senaraiSkorTempatan = dapatkanSkorSelamat();
+            const indeksLama = senaraiSkorTempatan.findIndex(item => item.nama.toLowerCase() === namaPemain.toLowerCase());
+            if (indeksLama !== -1) { if (skor > senaraiSkorTempatan[indeksLama].skor) senaraiSkorTempatan[indeksLama] = rekodBaru; }
+            else { senaraiSkorTempatan.push(rekodBaru); }
+            setSkorSelamat(senaraiSkorTempatan);
+
+            try {
+                if (window.auth && window.auth.currentUser) {
+                    const docId = namaPemain.toLowerCase().replace(/[^a-z0-9]/g, "-");
+                    const userDocRef = window.doc(window.db, 'artifacts', window.appId, 'public', 'data', 'leaderboard', docId);
+                    await window.setDoc(userDocRef, rekodBaru);
+                }
+            } catch (e) {}
+        }
+
+        window.dengarLeaderboardFirestore = function() {
+            try {
+                if (!window.auth || !window.auth.currentUser) return;
+                const publicCollectionRef = window.collection(window.db, 'artifacts', window.appId, 'public', 'data', 'leaderboard');
+                window.onSnapshot(publicCollectionRef, (querySnapshot) => {
+                    const senaraiAwan = [];
+                    querySnapshot.forEach((docSnapshot) => { senaraiAwan.push(docSnapshot.data()); });
+                    if (senaraiAwan.length > 0) { setSkorSelamat(senaraiAwan); paparLeaderboard(); }
+                });
+            } catch (e) {}
         }
 
         function paparLeaderboard() {
-            const list = document.getElementById('leaderboard-list');
-            list.innerHTML = "";
-            let senarai = JSON.parse(localStorage.getItem('senaraiSkorAmanah2026')) || [];
-            senarai.sort((a,b) => b.skor - a.skor);
+            const listContainer = document.getElementById('leaderboard-list');
+            const listContainerEnd = document.getElementById('leaderboard-list-end');
+            if(listContainer) listContainer.innerHTML = "";
+            if(listContainerEnd) listContainerEnd.innerHTML = "";
+            
+            let senaraiSkor = dapatkanSkorSelamat();
+            senaraiSkor.sort((a, b) => b.skor - a.skor);
 
-            if(senarai.length === 0) {
-                list.innerHTML = "<p class='text-stone-500 italic text-center py-2'>Tiada rekod data kelas.</p>";
+            if (senaraiSkor.length === 0) {
+                const emptyMsg = `<p class="text-stone-600 text-[9px] italic text-center py-2">Tiada rekod detektif.</p>`;
+                if(listContainer) listContainer.innerHTML = emptyMsg;
+                if(listContainerEnd) listContainerEnd.innerHTML = emptyMsg;
                 return;
             }
-            senarai.forEach((r, idx) => {
-                let p = idx === 0 ? "🥇" : idx === 1 ? "🥈" : idx === 2 ? "🥉" : `${idx+1}.`;
-                let div = document.createElement('div');
-                div.className = "flex justify-between items-center bg-stone-900 p-1.5 rounded border border-stone-800";
-                div.innerHTML = `<span class='truncate text-slate-300'>${p} <b>${r.nama}</b> (${r.pangkat})</span><span class='text-amber-500 font-bold'>${r.skor} Pts</span>`;
-                list.appendChild(div);
+
+            senaraiSkor.slice(0, 15).forEach((rekod, indeks) => {
+                const item = document.createElement('div');
+                item.className = "flex justify-between items-center bg-black/50 border border-stone-800 p-1 px-2 text-[9px] font-mono";
+                let pingat = indeks === 0 ? "🥇" : indeks === 1 ? "🥈" : indeks === 2 ? "🥉" : `${indeks + 1}.`;
+                item.innerHTML = `<div class="truncate pr-1 flex gap-1"><b>${pingat}</b><span class="capitalize text-stone-300 truncate">${rekod.nama}</span></div> <b class="text-amber-500">${rekod.skor} Pts</b>`;
+                
+                if(listContainer) listContainer.appendChild(item.cloneNode(true));
+                if(listContainerEnd) listContainerEnd.appendChild(item);
             });
         }
 
         function mintaPengesahanPadam() {
-            if (confirm("Adakah Cikgu pasti mahu memadamkan data kedudukan dan fail sulit murid dari peranti ini?")) {
-                localStorage.removeItem('senaraiSkorAmanah2026');
-                paparLeaderboard();
+            tampilkanModal("Kosongkan Fail Log Kes", "Adakah cikgu mengesahkan untuk memadamkan seluruh pengkalan data skor murid daripada memori storan peranti ini?", "❓", true, setSemulaSkor);
+        }
+
+        function setSemulaSkor() {
+            try { localStorage.removeItem('senaraiSkorAmanah'); } catch (e) { inMemoryStorage['senaraiSkorAmanah'] = []; }
+            paparLeaderboard();
+        }
+
+        function tutupIosFallback() { document.getElementById('box-ios-fallback').classList.add('hidden'); }
+
+        async function muatTurunRekodCSV() {
+            let senaraiSkor = [];
+            try {
+                if (window.auth && window.auth.currentUser && window.db) {
+                    tampilkanModal("Sinkronisasi Pelayan", "Menghubungkan sistem pangkalan data awan untuk memuat turun log kes terkini...", "⏳");
+                    const publicCollectionRef = window.collection(window.db, 'artifacts', window.appId, 'public', 'data', 'leaderboard');
+                    const querySnapshot = await window.getDocs(publicCollectionRef);
+                    querySnapshot.forEach((docSnapshot) => { senaraiSkor.push(docSnapshot.data()); });
+                    tutupModal();
+                }
+            } catch (e) {}
+
+            if (senaraiSkor.length === 0) senaraiSkor = dapatkanSkorSelamat();
+            if (senaraiSkor.length === 0) { tampilkanModal("Gagal Memproses", "Tiada rekod dijumpai.", "❌"); return; }
+            senaraiSkor.sort((a, b) => b.skor - a.skor);
+
+            let csvContent = "Nama Murid,Skor Siasatan,Tarikh Selesai,Skala Kefahaman,Justifikasi (TP5),Pelan Amalan (TP6)\n";
+            senaraiSkor.forEach(rekod => {
+                const nama = `"${rekod.nama.replace(/"/g, '""')}"`; const tarikh = `"${rekod.tarikh}"`;
+                const q1 = `"${(rekod.refleksi?.q1 || "-").replace(/"/g, '""')}"`;
+                const q2 = `"${(rekod.refleksi?.q2 || "-").replace(/"/g, '""')}"`;
+                const q3 = `"${(rekod.refleksi?.q3 || "-").replace(/"/g, '""')}"`;
+                csvContent += `${nama},${rekod.skor},${tarikh},${q1},${q2},${q3}\n`;
+            });
+
+            try {
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob); const link = document.createElement("a");
+                link.setAttribute("href", url); link.setAttribute("download", `Log_Kes_Amanah_${new Date().toLocaleDateString()}.csv`);
+                document.body.appendChild(link); link.click(); document.body.removeChild(link); URL.revokeObjectURL(url);
+            } catch (e) {
+                document.getElementById('ios-csv-text').value = csvContent;
+                document.getElementById('box-ios-fallback').classList.remove('hidden');
             }
         }
 
-        function muatTurunRekodCSV() {
-            let senarai = JSON.parse(localStorage.getItem('senaraiSkorAmanah2026')) || [];
-            if (senarai.length === 0) return;
-            let csv = "data:text/csv;charset=utf-8,Nama Murid,Skor,Pangkat,Tarikh,Refleksi Maksud,Refleksi Dalil,Refleksi Kepentingan,Refleksi Pengajaran\n";
-            senarai.forEach(r => {
-                csv += `"${r.nama}","${r.skor}","${r.pangkat}","${r.tarikh}","${r.ref.q1}","${r.ref.q2}","${r.ref.q3}","${r.ref.q4}"\n`;
-            });
-            const link = document.createElement("a");
-            link.setAttribute("href", encodeURI(csv));
-            link.setAttribute("download", `Laporan_Detektif_Amanah_Kelas_${new Date().toLocaleDateString()}.csv`);
-            document.body.appendChild(link); link.click(); document.body.removeChild(link);
-        }
+        function cetakLaporanRefleksi() { window.print(); }
 
         function mainSemula() {
             document.getElementById('box-end').classList.add('hidden');
             document.getElementById('box-login').classList.remove('hidden');
-            document.getElementById('flashlight').classList.add('hidden');
-            document.getElementById('papan-lengkap-msg').classList.add('hidden');
-            document.getElementById('inventory-desc').classList.add('hidden');
-            document.getElementById('form-reflection').reset();
-            
-            for(let i=1; i<=5; i++) {
-                const item = document.getElementById(`bukti-item-${i}`);
-                item.className = "bg-stone-900/90 p-2 rounded border border-stone-800 text-stone-500 flex items-center justify-between";
-                document.getElementById(`bukti-status-${i}`).innerText = "🔒 Terkunci";
+            document.getElementById('input-name').value = "";
+            document.getElementById('input-justification').value = "";
+            document.getElementById('input-plan-1').value = "";
+            document.getElementById('input-plan-2').value = "";
+            document.getElementById('input-plan-3').value = "";
+            bintangTerpilih = 0;
+            for (let i = 1; i <= 5; i++) {
+                document.getElementById(`star-${i}`).className = "far fa-star cursor-pointer text-stone-600 transition";
             }
+            document.getElementById('star-desc').innerText = "Sila pilih bintang...";
+            const btnSubmit = document.getElementById('btn-submit-rating');
+            btnSubmit.disabled = true;
+            btnSubmit.className = "w-full py-3 bg-stone-800 text-stone-500 font-black uppercase tracking-wider text-xs typewriter-font shadow-lg cursor-not-allowed";
+            susunanPuzzlePemain = [];
+            document.getElementById('puzzle-error').classList.add('hidden');
         }
+
+        janjiHujan();
+        paparLeaderboard();
     </script>
 </body>
 </html>
